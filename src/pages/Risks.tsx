@@ -92,7 +92,7 @@ const Risks: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Controls */}
         <div className="glass-card p-6 rounded-xl space-y-6">
-          <h3 className="font-bold flex items-center gap-2"><BarChart className="w-5 h-5" /> Parámetros</h3>
+          <h3 className="font-heading font-bold flex items-center gap-2 text-gradient"><BarChart className="w-5 h-5" /> Parámetros</h3>
           <div className="space-y-4">
             <div>
               <label className="text-sm text-muted-foreground block mb-2">Volatilidad del Mercado ({volatility * 100}%)</label>
@@ -128,7 +128,7 @@ const Risks: React.FC = () => {
 
         {/* Distribution Chart */}
         <div className="lg:col-span-2 glass-card p-6 rounded-xl">
-          <h3 className="font-bold mb-6 flex items-center gap-2"><ShieldAlert className="w-5 h-5" /> Distribución de Probabilidad del VAN</h3>
+          <h3 className="font-heading font-bold mb-6 flex items-center gap-2 text-gradient"><ShieldAlert className="w-5 h-5" /> Distribución de Probabilidad del VAN</h3>
           <div className="h-[400px]">
             {stats ? (
               <ReactECharts option={distributionOption} style={{ height: '100%' }} />
@@ -142,7 +142,7 @@ const Risks: React.FC = () => {
 
         {/* Tornado Chart */}
         <div className="lg:col-span-3 glass-card p-6 rounded-xl">
-          <h3 className="font-bold mb-6">Análisis de Sensibilidad (Tornado)</h3>
+          <h3 className="font-heading font-bold mb-6 text-gradient">Análisis de Sensibilidad (Tornado)</h3>
           <div className="h-[400px]">
             <ReactECharts option={tornadoOption} style={{ height: '100%' }} />
           </div>

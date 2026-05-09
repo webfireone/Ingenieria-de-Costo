@@ -94,18 +94,18 @@ const Quality: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Resistencia a Compresión</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Resistencia a Compresión</h3>
           <div className="h-[350px]"><ReactECharts option={resistanceChart} style={{ height: '100%' }} /></div>
         </div>
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Control de Slump (Asentamiento)</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Control de Slump (Asentamiento)</h3>
           <div className="h-[350px]"><ReactECharts option={slumpChart} style={{ height: '100%' }} /></div>
         </div>
       </div>
 
       <div className="glass-card p-6 rounded-xl">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> Registro de Muestras</h3>
+          <h3 className="font-heading font-bold text-lg flex items-center gap-2 text-gradient"><ClipboardCheck className="w-5 h-5" /> Registro de Muestras</h3>
           <div className="flex bg-background border border-border rounded-lg p-1">
             {(['todos', 'aprobado', 'rechazado', 'en_curso'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>

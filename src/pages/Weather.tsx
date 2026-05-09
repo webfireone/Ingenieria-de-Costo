@@ -363,7 +363,7 @@ const Weather: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="glass-card p-6 rounded-xl">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg">Pronóstico 7 Días</h3>
+            <h3 className="font-heading font-bold text-lg text-gradient">Pronóstico 7 Días</h3>
             <span className="text-xs text-muted-foreground">
               {lastUpdated ? `Actualizado ${lastUpdated.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}` : ''}
             </span>
@@ -383,7 +383,7 @@ const Weather: React.FC = () => {
         </div>
 
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Eventos Climáticos Recientes</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Eventos Climáticos Recientes</h3>
           {events.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Sun className="w-10 h-10 mx-auto mb-2 text-yellow-500" />
@@ -416,7 +416,7 @@ const Weather: React.FC = () => {
 
       {forecast.length > 0 && (
         <div className="glass-card p-6 rounded-xl mb-8">
-          <h3 className="font-bold text-lg mb-4">Detalle del Pronóstico Semanal</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Detalle del Pronóstico Semanal</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -446,7 +446,7 @@ const Weather: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Días de Lluvia por Mes</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Días de Lluvia por Mes</h3>
           <div className="h-[300px]"><ReactECharts option={chartOption} style={{ height: '100%' }} /></div>
           <p className="text-xs text-muted-foreground mt-3 text-center">
             <span className="inline-block w-3 h-3 bg-blue-500 rounded-sm mr-1 align-middle" />
@@ -458,7 +458,7 @@ const Weather: React.FC = () => {
           </p>
         </div>
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Resumen Semanal</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Resumen Semanal</h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl">
               <div className="p-2 bg-blue-500/10 rounded-lg"><ThermometerSun className="w-5 h-5 text-blue-500" /></div>

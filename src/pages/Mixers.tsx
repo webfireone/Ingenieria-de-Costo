@@ -104,7 +104,7 @@ const Mixers: React.FC = () => {
 
       <div className="glass-card p-6 rounded-xl">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg flex items-center gap-2"><Truck className="w-5 h-5" /> Flota de Mixers</h3>
+          <h3 className="font-heading font-bold text-lg flex items-center gap-2 text-gradient"><Truck className="w-5 h-5" /> Flota de Mixers</h3>
           <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:scale-105 transition-all">
             <Plus className="w-4 h-4" /> Agregar Mixer
           </button>

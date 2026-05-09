@@ -189,7 +189,7 @@ const Alerts: React.FC = () => {
 
       {showConfig && (
         <div className="glass-card p-6 rounded-xl mb-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Settings className="w-5 h-5" /> Configuración de Umbrales de Alerta</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2 text-gradient"><Settings className="w-5 h-5" /> Configuración de Umbrales de Alerta</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
               <label className="flex items-center gap-2 text-sm font-medium mb-2"><DollarSign className="w-4 h-4 text-muted-foreground" /> Variación de Precio Máx.</label>
@@ -233,7 +233,7 @@ const Alerts: React.FC = () => {
       {activeTab === 'stats' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="glass-card p-6 rounded-xl">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Alertas más frecuentes</h3>
+            <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2 text-gradient"><BarChart3 className="w-5 h-5" /> Alertas más frecuentes</h3>
             <div className="space-y-3">
               {stats.topAlerts.length === 0 && <p className="text-muted-foreground text-sm">Sin datos.</p>}
               {stats.topAlerts.map(([title, data]) => (
@@ -260,7 +260,7 @@ const Alerts: React.FC = () => {
           </div>
 
           <div className="glass-card p-6 rounded-xl">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><RefreshCw className="w-5 h-5" /> Alertas reincidentes</h3>
+            <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2 text-gradient"><RefreshCw className="w-5 h-5" /> Alertas reincidentes</h3>
             {stats.recurringAlerts.length === 0 ? (
               <p className="text-muted-foreground text-sm">No hay alertas reincidentes.</p>
             ) : (
@@ -285,7 +285,7 @@ const Alerts: React.FC = () => {
           </div>
 
           <div className="glass-card p-6 rounded-xl">
-            <h3 className="font-bold text-lg mb-4">Alertas por Fuente</h3>
+            <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Alertas por Fuente</h3>
             <div className="space-y-2">
               {Object.entries(stats.bySource)
                 .sort((a, b) => b[1] - a[1])
@@ -302,7 +302,7 @@ const Alerts: React.FC = () => {
           </div>
 
           <div className="glass-card p-6 rounded-xl">
-            <h3 className="font-bold text-lg mb-4">Alertas por Planta</h3>
+            <h3 className="font-heading font-bold text-lg mb-4 text-gradient">Alertas por Planta</h3>
             <div className="space-y-2">
               {Object.entries(stats.byPlant)
                 .sort((a, b) => b[1] - a[1])
@@ -322,7 +322,7 @@ const Alerts: React.FC = () => {
       ) : (
         <div className="glass-card p-6 rounded-xl">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg flex items-center gap-2"><Bell className="w-5 h-5" /> Registro de Alertas</h3>
+            <h3 className="font-heading font-bold text-lg flex items-center gap-2 text-gradient"><Bell className="w-5 h-5" /> Registro de Alertas</h3>
             <div className="flex bg-background border border-border rounded-lg p-1">
               <button onClick={() => setShowResolved(false)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${!showResolved ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Activas</button>
               <button onClick={() => setShowResolved(true)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${showResolved ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Todas</button>

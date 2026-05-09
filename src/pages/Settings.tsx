@@ -39,7 +39,7 @@ const SettingsPage: React.FC = () => {
     <>
       <div className="max-w-2xl">
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><SettingsIcon className="w-5 h-5 text-primary" /> Parámetros Generales</h3>
+          <h3 className="font-heading font-bold text-lg mb-6 flex items-center gap-2 text-gradient"><SettingsIcon className="w-5 h-5 text-primary" /> Parámetros Generales</h3>
           <div className="space-y-6">
             <div>
               <label className="flex items-center gap-2 text-sm font-medium mb-2"><Percent className="w-4 h-4 text-muted-foreground" /> Tasa de Descuento Anual</label>

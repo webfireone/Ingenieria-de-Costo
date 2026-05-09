@@ -42,7 +42,7 @@ const Comparativa: React.FC = () => {
 
       <div className="glass-card p-6 rounded-xl mb-6">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg flex items-center gap-2"><BarChart4 className="w-5 h-5" /> Comparativa de Plantas</h3>
+          <h3 className="font-heading font-bold text-lg flex items-center gap-2 text-gradient"><BarChart4 className="w-5 h-5" /> Comparativa de Plantas</h3>
           <button onClick={() => refetch()} disabled={isFetching} className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-lg text-sm font-bold hover:bg-primary/10 transition-all disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} /> Refrescar
           </button>
@@ -51,7 +51,7 @@ const Comparativa: React.FC = () => {
       </div>
 
       <div className="glass-card p-6 rounded-xl">
-        <h3 className="font-bold text-lg mb-6">Tabla Comparativa</h3>
+        <h3 className="font-heading font-bold text-lg mb-6 text-gradient">Tabla Comparativa</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

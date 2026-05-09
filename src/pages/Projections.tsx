@@ -103,11 +103,11 @@ const Projections: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold mb-4">Flujo de Caja Proyectado</h3>
+          <h3 className="font-heading font-bold mb-4 text-gradient">Flujo de Caja Proyectado</h3>
           <div className="h-[350px]"><ReactECharts option={chartOption} style={{ height: '100%' }} /></div>
         </div>
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold mb-4">Punto de Equilibrio</h3>
+          <h3 className="font-heading font-bold mb-4 text-gradient">Punto de Equilibrio</h3>
           <div className="h-[350px]"><ReactECharts option={breakEvenOption} style={{ height: '100%' }} /></div>
         </div>
       </div>

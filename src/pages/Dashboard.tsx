@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { Factory, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle2, FileSpreadsheet, FileText, BarChart3, Gauge, PieChart, LayoutDashboard, Target, Clock, Users } from 'lucide-react';
+import 'echarts-gl';
+import { Factory, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle2, FileSpreadsheet, FileText, BarChart3, Gauge, PieChart, LayoutDashboard, Target, Clock, Users, Layers } from 'lucide-react';
 import KPICard from '../components/KPICard';
 import { useFirestoreCollection } from '../hooks/useFirestore';
 import type { Plant, Project } from '../types';
 import { exportToExcel, exportToPDF } from '../services/importExport';
 
-type ChartView = 'pie' | 'radar' | 'line';
+type ChartView = 'pie' | 'radar' | 'line' | 'bar3d';
 
 const Dashboard: React.FC = () => {
   const { data: plants } = useFirestoreCollection<Plant>('plants');
@@ -33,7 +34,6 @@ const Dashboard: React.FC = () => {
   const plantOEE = (p: Plant) => p.availability * p.performance * p.qualityRate * 100;
 
   const filteredPlants = plants && (selectedPlant === 'all' ? plants : plants.filter(p => p.id === selectedPlant));
-
   const filteredProjects = projects && (selectedPlant === 'all' ? projects : projects.filter(p => p.plantId === selectedPlant));
 
   const totalMaterialCost = filteredPlants ? filteredPlants.reduce((sum, p) => {
@@ -84,6 +84,13 @@ const Dashboard: React.FC = () => {
       avoidLabelOverlap: false,
       itemStyle: { borderRadius: 10, borderColor: '#0f172a', borderWidth: 2 },
       label: { show: false },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 20,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(59, 130, 246, 0.4)',
+        },
+      },
       data: totalAll > 0 ? [
         { value: Math.round(totalMaterialCost), name: 'Materiales', itemStyle: { color: '#3b82f6' } },
         { value: Math.round(totalOp), name: 'Operación', itemStyle: { color: '#10b981' } },
@@ -166,13 +173,83 @@ const Dashboard: React.FC = () => {
         lineStyle: { color: colors[i % colors.length], width: 3 },
         symbol: symbols[i % symbols.length] as any,
         symbolSize: 8,
-        areaStyle: { opacity: 0.1, color: colors[i % colors.length] },
+        areaStyle: { opacity: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: colors[i % colors.length] + '30' }, { offset: 1, color: colors[i % colors.length] + '00' }] } as any },
       };
     }) ?? [
       { name: 'Planta Norte', type: 'line', data: [142, 138, 145, 140, 155, 150, 148, 160, 158, 165, 170, 162], smooth: true, lineStyle: { color: '#3b82f6', width: 3 }, symbol: 'circle', symbolSize: 8, areaStyle: { opacity: 0.1, color: '#3b82f6' } },
       { name: 'Planta Sur', type: 'line', data: [135, 140, 138, 142, 148, 145, 150, 155, 152, 158, 162, 157], smooth: true, lineStyle: { color: '#10b981', width: 3 }, symbol: 'diamond', symbolSize: 8, areaStyle: { opacity: 0.1, color: '#10b981' } },
     ],
     grid: { left: '10%', right: '5%', bottom: '15%', containLabel: true },
+  };
+
+  const bar3dOption = {
+    backgroundColor: 'transparent',
+    tooltip: {},
+    xAxis3D: {
+      type: 'category',
+      data: filteredPlants?.map(p => p.name) ?? ['Norte', 'Sur'],
+      axisLabel: { color: '#94a3b8' },
+    },
+    yAxis3D: {
+      type: 'category',
+      data: ['Materiales', 'Operación', 'Mantenimiento', 'Logística'],
+      axisLabel: { color: '#94a3b8' },
+    },
+    zAxis3D: {
+      type: 'value',
+      name: '$/m³',
+      axisLabel: { color: '#94a3b8' },
+    },
+    grid3D: {
+      boxWidth: 200,
+      boxHeight: 120,
+      boxDepth: 80,
+      viewControl: {
+        projection: 'perspective',
+        autoRotate: true,
+        autoRotateSpeed: 8,
+        distance: 300,
+        alpha: 25,
+        beta: 30,
+      },
+      light: {
+        main: { intensity: 1.2, shadow: true },
+        ambient: { intensity: 0.4 },
+      },
+    },
+    series: [{
+      type: 'bar3D',
+      shading: 'lambert',
+      data: (filteredPlants ?? ['Norte', 'Sur']).flatMap((plant, pi) => {
+        const p = typeof plant === 'string' ? null : plant;
+        return ['Materiales', 'Operación', 'Mantenimiento', 'Logística'].map((_, ci) => {
+          let val = 0;
+          if (p) {
+            const mat = p.materials.reduce((s, m) => s + m.unitPrice * m.quantityPerM3, 0);
+            const op = p.operations.reduce((s, o) => s + o.variablePerM3, 0) +
+              p.operations.reduce((s, o) => s + o.monthlyFixed, 0) / p.installedCapacity;
+            if (ci === 0) val = Math.round(mat);
+            else if (ci === 1) val = Math.round(op);
+            else if (ci === 2) val = Math.round(op * 0.3);
+            else val = Math.round(mat * 0.15);
+          } else {
+            val = [45, 25, 20, 10][ci];
+          }
+          return [pi, ci, Math.max(val, 1)];
+        });
+      }),
+      itemStyle: {
+        opacity: 0.85,
+        borderWidth: 0,
+      },
+      emphasis: {
+        itemStyle: {
+          opacity: 1,
+          borderWidth: 2,
+          borderColor: '#fff',
+        },
+      },
+    }],
   };
 
   const curvaSOption = (() => {
@@ -199,15 +276,16 @@ const Dashboard: React.FC = () => {
     pie: { option: costDistributionOption, label: 'Distribución', icon: PieChart },
     radar: { option: radarOption, label: 'Radar KPIs', icon: LayoutDashboard },
     line: { option: lineChartOption, label: 'Evolución', icon: BarChart3 },
+    bar3d: { option: bar3dOption, label: '3D Costos', icon: Layers },
   };
 
   return (
     <>
       <div className="flex justify-end gap-3 mb-6">
-        <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 border border-green-600/20 rounded-lg hover:bg-green-600/20 transition-all text-sm font-bold">
+        <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600/20 to-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl hover:from-emerald-600/30 hover:to-emerald-500/20 transition-all duration-300 text-sm font-bold shadow-lg shadow-emerald-500/5">
           <FileSpreadsheet className="w-4 h-4" /> Exportar Excel
         </button>
-        <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-red-600/10 text-red-500 border border-red-600/20 rounded-lg hover:bg-red-600/20 transition-all text-sm font-bold">
+        <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-600/20 to-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl hover:from-rose-600/30 hover:to-rose-500/20 transition-all duration-300 text-sm font-bold shadow-lg shadow-rose-500/5">
           <FileText className="w-4 h-4" /> Descargar PDF
         </button>
       </div>
@@ -227,86 +305,102 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-6 rounded-xl">
+        <div className="lg:col-span-2 glass-card p-6 rounded-2xl relative overflow-hidden">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-lg">Costos Operativos</h3>
+            <h3 className="font-heading font-bold text-lg text-gradient">Costos Operativos</h3>
             <div className="flex gap-2">
-              <div className="flex bg-background border border-border rounded-lg p-1">
+              <div className="flex bg-background/50 border border-border/50 rounded-xl p-1 gap-0.5 backdrop-blur-sm">
                 {(Object.entries(charts) as [ChartView, typeof charts['pie']][]).map(([key, chart]) => {
                   const Icon = chart.icon;
                   return (
-                    <button key={key} onClick={() => setChartView(key)} className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${chartView === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                    <button key={key} onClick={() => setChartView(key)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 ${
+                      chartView === key
+                        ? 'bg-gradient-to-r from-primary to-violet-500 text-white shadow-lg shadow-primary/20'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-primary/5'
+                    }`}>
                       <Icon className="w-3.5 h-3.5" /> {chart.label}
                     </button>
                   );
                 })}
               </div>
-              <select value={selectedPlant} onChange={e => setSelectedPlant(e.target.value)} className="bg-background border border-border rounded px-2 py-1 text-sm">
+              <select value={selectedPlant} onChange={e => setSelectedPlant(e.target.value)} className="bg-background/50 border border-border/50 rounded-xl px-3 py-1.5 text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                 <option value="all">Todas las plantas</option>
                 {plants?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
           </div>
-          <div className="h-[300px]">
+          <div className="h-[350px]">
             <ReactECharts key={chartView} option={charts[chartView].option} style={{ height: '100%' }} />
           </div>
         </div>
 
-        <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-6">Eficiencia Global de Planta</h3>
+        <div className="glass-card p-6 rounded-2xl relative overflow-hidden">
+          <h3 className="font-heading font-bold text-lg text-gradient mb-6">Eficiencia Global</h3>
           <div className="h-[300px]">
             <ReactECharts option={{
               series: [{
                 type: 'gauge', startAngle: 180, endAngle: 0, min: 0, max: 100, splitNumber: 8,
-                axisLine: { lineStyle: { width: 6, color: [[0.7, '#ef4444'], [0.85, '#f59e0b'], [1, '#10b981']] } },
+                axisLine: {
+                  lineStyle: {
+                    width: 8,
+                    color: [[0.7, '#ef4444'], [0.85, '#f59e0b'], [1, '#10b981']],
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(16, 185, 129, 0.3)',
+                  },
+                },
                 pointer: { icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z', length: '12%', width: 20, offsetCenter: [0, '-60%'], itemStyle: { color: 'auto' } },
                 axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
-                detail: { fontSize: 30, offsetCenter: [0, '-20%'], valueAnimation: true, formatter: '{value}%', color: 'inherit' },
+                detail: { fontSize: 32, offsetCenter: [0, '-25%'], valueAnimation: true, formatter: '{value}%', color: '#f8fafc', fontFamily: 'JetBrains Mono', fontWeight: 'bold' },
+                title: { offsetCenter: [0, '30%'], fontSize: 14, color: '#94a3b8' },
                 data: [{ value: Math.round(filteredPlants && filteredPlants.length > 0 ? filteredPlants.reduce((s, p) => s + plantOEE(p), 0) / filteredPlants.length : plants && plants.length > 0 ? plants.reduce((s, p) => s + plantOEE(p), 0) / plants.length : 88), name: 'OEE' }]
               }]
             }} style={{ height: '100%' }} />
           </div>
         </div>
 
-        <div className="lg:col-span-3 glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Curva S - Avance de Producción</h3>
+        <div className="lg:col-span-3 glass-card p-6 rounded-2xl relative overflow-hidden">
+          <h3 className="font-heading font-bold text-lg text-gradient mb-4">Curva S - Avance de Producción</h3>
           <div className="h-[300px]">
             <ReactECharts option={curvaSOption} style={{ height: '100%' }} />
           </div>
         </div>
 
-          <div className="lg:col-span-3 glass-card p-6 rounded-xl">
-            <h3 className="font-bold text-lg mb-4">Alertas de Control & Calidad</h3>
-            <div className="space-y-4">
-              {filteredPlants && filteredPlants.length > 0 && filteredPlants.every(p => p.materials.length > 0) && (
-                <div className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <AlertTriangle className="text-red-500" />
-                    <div>
-                      <p className="font-medium">Variación de Precio: Cemento Portland</p>
-                      <p className="text-sm text-muted-foreground">Incremento del 15% detectado en {filteredPlants.length === 1 ? filteredPlants[0].name : 'plantas seleccionadas'}</p>
-                    </div>
+        <div className="lg:col-span-3 glass-card p-6 rounded-2xl relative overflow-hidden">
+          <h3 className="font-heading font-bold text-lg text-gradient mb-4">Alertas de Control & Calidad</h3>
+          <div className="space-y-4">
+            {filteredPlants && filteredPlants.length > 0 && filteredPlants.every(p => p.materials.length > 0) && (
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-rose-500/10 to-rose-500/5 border border-rose-500/20 rounded-xl group hover:from-rose-500/15 hover:to-rose-500/10 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-rose-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                    <AlertTriangle className="w-5 h-5 text-rose-400" />
                   </div>
-                  <button className="text-sm font-bold text-red-500">RECALCULAR</button>
-                </div>
-              )}
-              {filteredProjects && filteredProjects.length > 0 && (
-                <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <CheckCircle2 className="text-green-500" />
-                    <div>
-                      <p className="font-medium">Resistencia a 28 días - {filteredProjects.length === 1 ? filteredProjects[0].name : `${filteredProjects.length} proyectos`}</p>
-                      <p className="text-sm text-muted-foreground">98.5% de cumplimiento en muestras H-30</p>
-                    </div>
+                  <div>
+                    <p className="font-semibold">Variación de Precio: Cemento Portland</p>
+                    <p className="text-sm text-muted-foreground">Incremento del 15% detectado en {filteredPlants.length === 1 ? filteredPlants[0].name : 'plantas seleccionadas'}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">Hace 2 horas</span>
                 </div>
-              )}
-              {(!filteredPlants || filteredPlants.length === 0) && (
-                <p className="text-muted-foreground text-sm">No hay datos para la planta seleccionada.</p>
-              )}
-            </div>
+                <button className="text-sm font-bold text-rose-400 hover:text-rose-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-rose-500/10">RECALCULAR</button>
+              </div>
+            )}
+            {filteredProjects && filteredProjects.length > 0 && (
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl group hover:from-emerald-500/15 hover:to-emerald-500/10 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-emerald-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Resistencia a 28 días - {filteredProjects.length === 1 ? filteredProjects[0].name : `${filteredProjects.length} proyectos`}</p>
+                    <p className="text-sm text-muted-foreground">98.5% de cumplimiento en muestras H-30</p>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground">Hace 2 horas</span>
+              </div>
+            )}
+            {(!filteredPlants || filteredPlants.length === 0) && (
+              <p className="text-muted-foreground text-sm">No hay datos para la planta seleccionada.</p>
+            )}
           </div>
+        </div>
       </div>
     </>
   );

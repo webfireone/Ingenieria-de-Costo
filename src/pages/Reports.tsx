@@ -52,7 +52,7 @@ const Reports: React.FC = () => {
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Download className="w-5 h-5 text-primary" /> Exportar Datos</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2 text-gradient"><Download className="w-5 h-5 text-primary" /> Exportar Datos</h3>
           <p className="text-sm text-muted-foreground mb-6">Descargue los datos del sistema en formato Excel o PDF para su análisis y presentación.</p>
           <div className="space-y-4">
             <button onClick={handleExportPlants} className="w-full flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-all">
@@ -71,7 +71,7 @@ const Reports: React.FC = () => {
         </div>
 
         <div className="glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Upload className="w-5 h-5 text-primary" /> Importar Datos</h3>
+          <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2 text-gradient"><Upload className="w-5 h-5 text-primary" /> Importar Datos</h3>
           <p className="text-sm text-muted-foreground mb-6">Cargue archivos CSV o Excel con datos de plantas, proyectos o presupuestos.</p>
           <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={handleImportCSV}>
             <FileUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
