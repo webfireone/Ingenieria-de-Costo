@@ -1,11 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { LayoutDashboard, Factory, Briefcase, ClipboardCheck, BarChart3, ShieldAlert, FileOutput, Settings, Receipt } from 'lucide-react';
+import { LayoutDashboard, Factory, Briefcase, ClipboardCheck, BarChart3, ShieldAlert, FileOutput, Settings, Receipt, Bell } from 'lucide-react';
 const pageMeta = {
     dashboard: { title: 'Panel Operativo', description: 'Monitoreo de costos y rentabilidad en tiempo real' },
     plants: { title: 'Gestión de Plantas', description: 'Administración de plantas de hormigón y parámetros operativos' },
     projects: { title: 'Gestión de Proyectos', description: 'Planificación, presupuestos y seguimiento de obras' },
     presupuestos: { title: 'Presupuestos y Cotizaciones', description: 'Armado de presupuestos con materiales, MO, equipos e impuestos' },
     quality: { title: 'Control de Calidad', description: 'Resistencia, slump, muestras y rechazos de hormigón' },
+    alerts: { title: 'Alertas y Umbrales', description: 'Configuración de umbrales y monitoreo de alertas del sistema' },
     projections: { title: 'Proyecciones Financieras', description: 'Flujo de caja, punto de equilibrio y escenarios' },
     risks: { title: 'Análisis de Riesgos', description: 'Simulación Monte Carlo y análisis de sensibilidad' },
     reports: { title: 'Reportes y Exportación', description: 'Importación y exportación de datos (CSV, Excel, PDF)' },
@@ -17,6 +18,7 @@ const navItems = [
     { icon: Briefcase, label: 'Proyectos', page: 'projects' },
     { icon: Receipt, label: 'Presupuestos', page: 'presupuestos' },
     { icon: ClipboardCheck, label: 'Calidad', page: 'quality' },
+    { icon: Bell, label: 'Alertas', page: 'alerts' },
     { icon: BarChart3, label: 'Proyecciones', page: 'projections' },
     { icon: ShieldAlert, label: 'Riesgos', page: 'risks' },
     { icon: FileOutput, label: 'Reportes', page: 'reports' },

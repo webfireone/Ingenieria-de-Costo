@@ -7,6 +7,7 @@ import Plants from './pages/Plants';
 import Projects from './pages/Projects';
 import Projections from './pages/Projections';
 import Presupuestos from './pages/Presupuestos';
+import Alerts from './pages/Alerts';
 import Quality from './pages/Quality';
 import Risks from './pages/Risks';
 import Reports from './pages/Reports';
@@ -39,6 +40,7 @@ function App() {
             case 'projects': return _jsx(Projects, {});
             case 'projections': return _jsx(Projections, {});
             case 'presupuestos': return _jsx(Presupuestos, {});
+            case 'alerts': return _jsx(Alerts, {});
             case 'quality': return _jsx(Quality, {});
             case 'risks': return _jsx(Risks, {});
             case 'reports': return _jsx(Reports, {});
