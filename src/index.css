@@ -84,3 +84,162 @@
 .neo-gradient {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
+
+/* Mobile preview overrides */
+.mobile-preview .glass-card {
+  padding: 0.75rem !important;
+}
+
+.mobile-preview h2.text-2xl {
+  font-size: 1.1rem !important;
+}
+
+.mobile-preview h3.font-bold.text-lg {
+  font-size: 0.9rem !important;
+}
+
+.mobile-preview .text-lg.font-bold {
+  font-size: 0.9rem !important;
+}
+
+.mobile-preview .text-2xl.font-bold.tracking-tight {
+  font-size: 1.25rem !important;
+}
+
+.mobile-preview .mb-8 {
+  margin-bottom: 0.75rem !important;
+}
+
+.mobile-preview .mb-6 {
+  margin-bottom: 0.5rem !important;
+}
+
+.mobile-preview .gap-6 {
+  gap: 0.5rem !important;
+}
+
+.mobile-preview .gap-8 {
+  gap: 0.75rem !important;
+}
+
+.mobile-preview .p-6 {
+  padding: 0.75rem !important;
+}
+
+.mobile-preview .px-4 {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.mobile-preview .py-3 {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+}
+
+.mobile-preview .px-6 {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+.mobile-preview .py-8 {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.mobile-preview .px-3 {
+  padding-left: 0.4rem !important;
+  padding-right: 0.4rem !important;
+}
+
+.mobile-preview .py-2 {
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.3rem !important;
+}
+
+.mobile-preview .text-2xl.font-bold.tracking-tight:not(h2) {
+  font-size: 1rem !important;
+}
+
+.mobile-preview .text-sm {
+  font-size: 0.7rem !important;
+}
+
+.mobile-preview .text-xs {
+  font-size: 0.6rem !important;
+}
+
+.mobile-preview .text-lg {
+  font-size: 0.8rem !important;
+}
+
+.mobile-preview button,
+.mobile-preview .px-4.py-2 {
+  font-size: 0.7rem !important;
+  padding: 0.35rem 0.6rem !important;
+}
+
+.mobile-preview select {
+  font-size: 0.7rem !important;
+  padding: 0.25rem 0.4rem !important;
+}
+
+.mobile-preview .p-4 {
+  padding: 0.5rem !important;
+}
+
+.mobile-preview .p-5 {
+  padding: 0.6rem !important;
+}
+
+.mobile-preview .p-3 {
+  padding: 0.4rem !important;
+}
+
+.mobile-preview .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.4rem !important;
+}
+
+.mobile-preview .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.5rem !important;
+}
+
+.mobile-preview .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.25rem !important;
+}
+
+/* Chart height overrides for mobile */
+.mobile-preview [style*="height: 300px"],
+.mobile-preview .h-\[300px\] {
+  height: 160px !important;
+}
+
+.mobile-preview [style*="height: 350px"],
+.mobile-preview .h-\[350px\] {
+  height: 180px !important;
+}
+
+.mobile-preview [style*="height: 400px"],
+.mobile-preview .h-\[400px\] {
+  height: 200px !important;
+}
+
+/* Table cells */
+.mobile-preview th,
+.mobile-preview td {
+  padding: 0.3rem 0.4rem !important;
+  font-size: 0.65rem !important;
+}
+
+/* Inputs */
+.mobile-preview input[type="text"],
+.mobile-preview input[type="number"],
+.mobile-preview input[type="date"],
+.mobile-preview select {
+  font-size: 0.7rem !important;
+  padding: 0.3rem 0.4rem !important;
+}
+
+/* KPI cards */
+.mobile-preview .text-2xl.font-bold:not(h2):not(.tracking-tight) {
+  font-size: 1rem !important;
+}
