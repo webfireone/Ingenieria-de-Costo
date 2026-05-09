@@ -49,44 +49,50 @@ const Dashboard = () => {
         let y = 20;
         // ── Title ──
         doc.setFontSize(22);
-        doc.setTextColor(59, 130, 246);
+        doc.setTextColor(30, 41, 59);
         doc.text('GRUPO FALPAT', 14, y);
         y += 8;
         doc.setFontSize(14);
-        doc.setTextColor(148, 163, 184);
+        doc.setTextColor(100, 116, 139);
         doc.text('Reporte Ejecutivo — Ingeniería de Costo', 14, y);
         y += 6;
         doc.setFontSize(9);
+        doc.setTextColor(148, 163, 184);
         doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, 14, y);
         y += 12;
+        // separator line
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.5);
+        doc.line(14, y, pageW - 14, y);
+        y += 8;
         // ── 1. KPIs ──
-        doc.setFontSize(13);
+        doc.setFontSize(14);
         doc.setTextColor(59, 130, 246);
-        doc.text('Indicadores Clave (KPI)', 14, y);
+        doc.text('1. Indicadores Clave (KPI)', 14, y);
         y += 8;
         const kpiData = [
-            ['Producción Mensual', `${mp} m³`, 'Volumen total de hormigón producido por mes entre todas las plantas.'],
-            ['Costo Promedio', `$${ta} /m³`, 'Suma de materiales ($${mc}) + operación variable ($${ov}) + fija ($${of}) por m³.'],
-            ['Margen Bruto', `${gm}%`, 'Diferencia entre el precio de venta promedio ($${asp}) y el costo, sobre el precio.'],
-            ['Eficiencia (OEE)', `${oee}%`, 'Disponibilidad × Rendimiento × Calidad. Mide la eficiencia global de las plantas.'],
-            ['VAN Estimado', `$${van}k`, 'Valor Actual Neto de todos los proyectos activos. Positivo = proyecto rentable.'],
-            ['ROI Proyectado', `${roiVal}%`, 'Retorno sobre la inversión. Porcentaje de ganancia respecto a lo invertido.'],
-            ['Payback', `${pb} meses`, 'Tiempo estimado para recuperar la inversión inicial.'],
-            ['Productividad', `${prod} m³/h/día`, 'm³ producidos por hora y por cuadrilla de trabajo.'],
+            ['Producción Mensual', `${mp} m³`, 'Volumen total de hormigón producido por mes, sumando todas las plantas activas.'],
+            ['Costo Promedio', `$${ta} /m³`, `Materiales ($${mc}) + operación variable ($${ov}) + operación fija ($${of}) por metro cúbico.`],
+            ['Margen Bruto', `${gm}%`, `Diferencia entre precio de venta promedio ($${asp}/m³) y el costo total, sobre el precio de venta.`],
+            ['Eficiencia (OEE)', `${oee}%`, 'Disponibilidad × Rendimiento × Calidad. Mide la eficiencia global de las plantas de hormigón.'],
+            ['VAN Estimado', `$${van}k`, 'Valor Actual Neto de todos los proyectos activos. VAN positivo indica que el proyecto es rentable.'],
+            ['ROI Proyectado', `${roiVal}%`, 'Retorno sobre la Inversión. Porcentaje de ganancia obtenido respecto al capital invertido.'],
+            ['Payback', `${pb} meses`, 'Período de recupero de la inversión inicial. Más corto es mejor.'],
+            ['Productividad', `${prod} m³/h/día`, 'Metros cúbicos producidos por hora y por cuadrilla de trabajo en promedio.'],
         ];
         for (const [kpi, val, desc] of kpiData) {
             doc.setFontSize(10);
-            doc.setTextColor(248, 250, 252);
-            doc.text(`${kpi}:  `, 14, y);
+            doc.setTextColor(30, 41, 59);
+            doc.text(`${kpi}:`, 14, y);
             doc.setFontSize(11);
             doc.setTextColor(59, 130, 246);
-            doc.text(String(val), 55, y);
-            y += 4.5;
+            doc.text(String(val), 60, y);
+            y += 5;
             doc.setFontSize(7.5);
-            doc.setTextColor(148, 163, 184);
+            doc.setTextColor(100, 116, 139);
             const lines = doc.splitTextToSize(desc, pageW - 28);
             doc.text(lines, 14, y);
-            y += lines.length * 3.5 + 3;
+            y += lines.length * 3.5 + 3.5;
             if (y > 260) {
                 doc.addPage();
                 y = 20;
@@ -98,14 +104,18 @@ const Dashboard = () => {
             return new Promise(resolve => {
                 if (!ref)
                     return resolve(null);
-                const canvas = ref.querySelector('canvas');
-                if (!canvas)
+                const container = ref.querySelector('.echarts-for-react');
+                if (!container)
                     return resolve(null);
-                const instance = echarts.getInstanceByDom(canvas);
+                const instance = echarts.getInstanceByDom(container);
                 if (!instance)
                     return resolve(null);
                 try {
-                    const dataUrl = instance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#0f172a' });
+                    const dataUrl = instance.getDataURL({
+                        type: 'png',
+                        pixelRatio: 2,
+                        backgroundColor: '#0f172a',
+                    });
                     resolve(dataUrl);
                 }
                 catch {
@@ -125,10 +135,10 @@ const Dashboard = () => {
             }
             doc.setFontSize(12);
             doc.setTextColor(59, 130, 246);
-            doc.text('Gráfico — Costos Operativos', 14, y);
+            doc.text('2. Gráfico — Costos Operativos', 14, y);
             y += 4;
             doc.setFontSize(7.5);
-            doc.setTextColor(148, 163, 184);
+            doc.setTextColor(100, 116, 139);
             doc.text('Distribución de costos de materiales, operación, mantenimiento y logística por planta.', 14, y);
             y += 6;
             doc.addImage(chartImg, 'PNG', 14, y, pageW - 28, 80);
@@ -141,11 +151,11 @@ const Dashboard = () => {
             }
             doc.setFontSize(12);
             doc.setTextColor(59, 130, 246);
-            doc.text('Gráfico — Eficiencia Global (OEE)', 14, y);
+            doc.text('3. Gráfico — Eficiencia Global (OEE)', 14, y);
             y += 4;
             doc.setFontSize(7.5);
-            doc.setTextColor(148, 163, 184);
-            doc.text('Indicador tipo velocímetro que muestra el OEE promedio de todas las plantas.', 14, y);
+            doc.setTextColor(100, 116, 139);
+            doc.text('Indicador tipo velocímetro que muestra el OEE promedio de todas las plantas consolidadas.', 14, y);
             y += 6;
             doc.addImage(gaugeImg, 'PNG', 14, y, 80, 70);
             y += 76;
@@ -157,27 +167,27 @@ const Dashboard = () => {
             }
             doc.setFontSize(12);
             doc.setTextColor(59, 130, 246);
-            doc.text('Gráfico — Curva S de Producción', 14, y);
+            doc.text('4. Gráfico — Curva S de Producción', 14, y);
             y += 4;
             doc.setFontSize(7.5);
-            doc.setTextColor(148, 163, 184);
+            doc.setTextColor(100, 116, 139);
             doc.text('Compara el avance planificado vs real de producción acumulada mes a mes.', 14, y);
             y += 6;
             doc.addImage(curvaImg, 'PNG', 14, y, pageW - 28, 70);
             y += 76;
         }
-        // ── 3. Plants table ──
+        // ── 5. Plants table ──
         if (y + 30 > 260) {
             doc.addPage();
             y = 20;
         }
-        doc.setFontSize(13);
+        doc.setFontSize(12);
         doc.setTextColor(59, 130, 246);
-        doc.text('Plantas de Hormigón', 14, y);
+        doc.text('5. Plantas de Hormigón', 14, y);
         y += 4;
         doc.setFontSize(7.5);
-        doc.setTextColor(148, 163, 184);
-        doc.text('Detalle de cada planta: capacidad instalada, indicadores de eficiencia y costos.', 14, y);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Detalle de cada planta: capacidad instalada, indicadores de eficiencia (disponibilidad, rendimiento, calidad) y costo por metro cúbico.', 14, y);
         y += 6;
         const plantHeaders = [['Planta', 'Ubicación', 'Cap. (m³/mes)', 'Disponib.', 'Rendim.', 'Calidad', 'OEE (%)', 'Mat. ($/m³)', 'Op. ($/m³)']];
         const plantRows = plants.map(p => {
@@ -199,24 +209,25 @@ const Dashboard = () => {
             body: plantRows,
             startY: y,
             theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
-            bodyStyles: { fontSize: 6.5, textColor: [248, 250, 252] },
+            headStyles: { fillColor: [59, 130, 246], fontSize: 7, textColor: [255, 255, 255] },
+            bodyStyles: { fontSize: 6.5, textColor: [30, 41, 59] },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
             styles: { cellPadding: 2 },
         });
         y = doc.lastAutoTable.finalY + 12;
-        // ── 4. Projects table ──
+        // ── 6. Projects table ──
         if (projects && projects.length > 0) {
             if (y + 30 > 260) {
                 doc.addPage();
                 y = 20;
             }
-            doc.setFontSize(13);
+            doc.setFontSize(12);
             doc.setTextColor(59, 130, 246);
-            doc.text('Proyectos y Obras', 14, y);
+            doc.text('6. Proyectos y Obras', 14, y);
             y += 4;
             doc.setFontSize(7.5);
-            doc.setTextColor(148, 163, 184);
-            doc.text('Proyectos activos con volumen, duración, precio de venta e ingreso total estimado.', 14, y);
+            doc.setTextColor(100, 116, 139);
+            doc.text('Proyectos activos con volumen total, duración estimada, precio de venta por m³ e ingreso total proyectado.', 14, y);
             y += 6;
             const projHeaders = [['Proyecto', 'Vol. (m³)', 'Duración (meses)', 'Precio ($/m³)', 'Ingreso Total']];
             const projRows = projects.map(p => [
@@ -229,24 +240,25 @@ const Dashboard = () => {
                 body: projRows,
                 startY: y,
                 theme: 'grid',
-                headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
-                bodyStyles: { fontSize: 6.5, textColor: [248, 250, 252] },
+                headStyles: { fillColor: [59, 130, 246], fontSize: 7, textColor: [255, 255, 255] },
+                bodyStyles: { fontSize: 6.5, textColor: [30, 41, 59] },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
                 styles: { cellPadding: 2 },
             });
             y = doc.lastAutoTable.finalY + 12;
         }
-        // ── 5. Alert summary ──
+        // ── 7. Alert summary ──
         if (y + 20 > 260) {
             doc.addPage();
             y = 20;
         }
-        doc.setFontSize(13);
+        doc.setFontSize(12);
         doc.setTextColor(59, 130, 246);
-        doc.text('Alertas de Control', 14, y);
+        doc.text('7. Alertas de Control', 14, y);
         y += 4;
         doc.setFontSize(7.5);
-        doc.setTextColor(148, 163, 184);
-        doc.text('Eventos detectados automáticamente sobre variaciones de precio, calidad y eficiencia.', 14, y);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Eventos detectados automáticamente: variaciones de precio de insumos, desviaciones de calidad y eficiencia operativa.', 14, y);
         y += 6;
         const hasMatAlerts = filteredPlants && filteredPlants.length > 0 && filteredPlants.every(p => p.materials.length > 0);
         const alertBody = [];
@@ -263,8 +275,9 @@ const Dashboard = () => {
                 body: alertBody,
                 startY: y,
                 theme: 'grid',
-                headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
-                bodyStyles: { fontSize: 6.5, textColor: [248, 250, 252] },
+                headStyles: { fillColor: [59, 130, 246], fontSize: 7, textColor: [255, 255, 255] },
+                bodyStyles: { fontSize: 6.5, textColor: [30, 41, 59] },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
                 styles: { cellPadding: 2 },
             });
             y = doc.lastAutoTable.finalY + 12;
