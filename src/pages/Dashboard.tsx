@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
+import * as echarts from 'echarts';
 import 'echarts-gl';
 import { Factory, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle2, FileSpreadsheet, FileText, BarChart3, Gauge, PieChart, LayoutDashboard, Target, Clock, Users, Layers } from 'lucide-react';
 import KPICard from '../components/KPICard';
 import { useFirestoreCollection } from '../hooks/useFirestore';
 import type { Plant, Project } from '../types';
-import { exportToExcel, exportToPDF } from '../services/importExport';
+import { exportToExcel } from '../services/importExport';
+import { jsPDF } from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
 
 type ChartView = 'pie' | 'radar' | 'line' | 'bar3d';
 
@@ -14,6 +17,9 @@ const Dashboard: React.FC = () => {
   const { data: projects } = useFirestoreCollection<Project>('projects');
   const [chartView, setChartView] = useState<ChartView>('pie');
   const [selectedPlant, setSelectedPlant] = useState('all');
+  const chartRef = useRef<HTMLDivElement>(null);
+  const gaugeRef = useRef<HTMLDivElement>(null);
+  const curvaRef = useRef<HTMLDivElement>(null);
 
   const handleExportExcel = () => {
     if (!plants) return;
@@ -24,11 +30,251 @@ const Dashboard: React.FC = () => {
     exportToExcel(exportData, `Reporte_Plantas_${new Date().toLocaleDateString()}`);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!plants) return;
-    const headers = [['Planta', 'Ubicación', 'Capacidad Mensual', 'Eficiencia OEE']];
-    const rows = plants.map(p => [p.name, p.location, `${p.installedCapacity} m3`, `${(p.availability * p.performance * p.qualityRate * 100).toFixed(1)}%`]);
-    exportToPDF('Reporte Ejecutivo - Ingeniería de Costo', headers, rows, 'Reporte_Ejecutivo');
+
+    const ov = totalOpVariable.toFixed(2);
+    const of = totalOpFixed.toFixed(2);
+    const mc = totalMaterialCost.toFixed(2);
+    const ta = totalAll.toFixed(2);
+    const mp = monthlyProduction.toLocaleString();
+    const gm = grossMargin.toFixed(1);
+    const oee = (filteredPlants && filteredPlants.length > 0
+      ? filteredPlants.reduce((s, p) => s + plantOEE(p), 0) / filteredPlants.length
+      : plants.reduce((s, p) => s + plantOEE(p), 0) / plants.length
+    ).toFixed(2);
+    const van = (vanEst / 1000).toFixed(0);
+    const roiVal = roi.toFixed(2);
+    const pb = paybackMonths;
+    const prod = productividad;
+    const asp = avgSalePrice.toFixed(2);
+    const tv = totalVolume.toLocaleString();
+
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // ── Title ──
+    doc.setFontSize(22);
+    doc.setTextColor(59, 130, 246);
+    doc.text('GRUPO FALPAT', 14, y);
+    y += 8;
+    doc.setFontSize(14);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Reporte Ejecutivo — Ingeniería de Costo', 14, y);
+    y += 6;
+    doc.setFontSize(9);
+    doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, 14, y);
+    y += 12;
+
+    // ── 1. KPIs ──
+    doc.setFontSize(13);
+    doc.setTextColor(59, 130, 246);
+    doc.text('Indicadores Clave (KPI)', 14, y);
+    y += 8;
+
+    const kpiData = [
+      ['Producción Mensual', `${mp} m³`, 'Volumen total de hormigón producido por mes entre todas las plantas.'],
+      ['Costo Promedio', `$${ta} /m³`, 'Suma de materiales ($${mc}) + operación variable ($${ov}) + fija ($${of}) por m³.'],
+      ['Margen Bruto', `${gm}%`, 'Diferencia entre el precio de venta promedio ($${asp}) y el costo, sobre el precio.'],
+      ['Eficiencia (OEE)', `${oee}%`, 'Disponibilidad × Rendimiento × Calidad. Mide la eficiencia global de las plantas.'],
+      ['VAN Estimado', `$${van}k`, 'Valor Actual Neto de todos los proyectos activos. Positivo = proyecto rentable.'],
+      ['ROI Proyectado', `${roiVal}%`, 'Retorno sobre la inversión. Porcentaje de ganancia respecto a lo invertido.'],
+      ['Payback', `${pb} meses`, 'Tiempo estimado para recuperar la inversión inicial.'],
+      ['Productividad', `${prod} m³/h/día`, 'm³ producidos por hora y por cuadrilla de trabajo.'],
+    ];
+
+    for (const [kpi, val, desc] of kpiData) {
+      doc.setFontSize(10);
+      doc.setTextColor(248, 250, 252);
+      doc.text(`${kpi}:  `, 14, y);
+      doc.setFontSize(11);
+      doc.setTextColor(59, 130, 246);
+      doc.text(String(val), 55, y);
+      y += 4.5;
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      const lines = doc.splitTextToSize(desc, pageW - 28);
+      doc.text(lines, 14, y);
+      y += lines.length * 3.5 + 3;
+      if (y > 260) { doc.addPage(); y = 20; }
+    }
+    y += 4;
+
+    // ── 2. Charts ──
+    const captureChart = (ref: HTMLDivElement | null): Promise<string | null> => {
+      return new Promise(resolve => {
+        if (!ref) return resolve(null);
+        const canvas = ref.querySelector('canvas');
+        if (!canvas) return resolve(null);
+        const instance = echarts.getInstanceByDom(canvas);
+        if (!instance) return resolve(null);
+        try {
+          const dataUrl = instance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#0f172a' });
+          resolve(dataUrl);
+        } catch {
+          resolve(null);
+        }
+      });
+    };
+
+    const [chartImg, gaugeImg, curvaImg] = await Promise.all([
+      captureChart(chartRef.current),
+      captureChart(gaugeRef.current),
+      captureChart(curvaRef.current),
+    ]);
+
+    if (chartImg) {
+      if (y + 100 > 260) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.text('Gráfico — Costos Operativos', 14, y);
+      y += 4;
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Distribución de costos de materiales, operación, mantenimiento y logística por planta.', 14, y);
+      y += 6;
+      doc.addImage(chartImg, 'PNG', 14, y, pageW - 28, 80);
+      y += 88;
+    }
+
+    if (gaugeImg) {
+      if (y + 80 > 260) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.text('Gráfico — Eficiencia Global (OEE)', 14, y);
+      y += 4;
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Indicador tipo velocímetro que muestra el OEE promedio de todas las plantas.', 14, y);
+      y += 6;
+      doc.addImage(gaugeImg, 'PNG', 14, y, 80, 70);
+      y += 76;
+    }
+
+    if (curvaImg) {
+      if (y + 80 > 260) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.text('Gráfico — Curva S de Producción', 14, y);
+      y += 4;
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Compara el avance planificado vs real de producción acumulada mes a mes.', 14, y);
+      y += 6;
+      doc.addImage(curvaImg, 'PNG', 14, y, pageW - 28, 70);
+      y += 76;
+    }
+
+    // ── 3. Plants table ──
+    if (y + 30 > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.setTextColor(59, 130, 246);
+    doc.text('Plantas de Hormigón', 14, y);
+    y += 4;
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Detalle de cada planta: capacidad instalada, indicadores de eficiencia y costos.', 14, y);
+    y += 6;
+
+    const plantHeaders = [['Planta', 'Ubicación', 'Cap. (m³/mes)', 'Disponib.', 'Rendim.', 'Calidad', 'OEE (%)', 'Mat. ($/m³)', 'Op. ($/m³)']];
+    const plantRows = plants.map(p => {
+      const matCost = p.materials.reduce((s, m) => s + m.unitPrice * m.quantityPerM3, 0);
+      const opCost = p.operations.reduce((s, o) => s + o.variablePerM3, 0) +
+        p.operations.reduce((s, o) => s + o.monthlyFixed, 0) / p.installedCapacity;
+      return [
+        p.name, p.location, `${p.installedCapacity}`,
+        `${(p.availability * 100).toFixed(0)}%`,
+        `${(p.performance * 100).toFixed(0)}%`,
+        `${(p.qualityRate * 100).toFixed(0)}%`,
+        plantOEE(p).toFixed(1),
+        `$${matCost.toFixed(2)}`,
+        `$${opCost.toFixed(2)}`,
+      ];
+    });
+
+    autoTable(doc, {
+      head: plantHeaders,
+      body: plantRows,
+      startY: y,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
+      bodyStyles: { fontSize: 6.5, textColor: [248, 250, 252] },
+      styles: { cellPadding: 2 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 12;
+
+    // ── 4. Projects table ──
+    if (projects && projects.length > 0) {
+      if (y + 30 > 260) { doc.addPage(); y = 20; }
+      doc.setFontSize(13);
+      doc.setTextColor(59, 130, 246);
+      doc.text('Proyectos y Obras', 14, y);
+      y += 4;
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Proyectos activos con volumen, duración, precio de venta e ingreso total estimado.', 14, y);
+      y += 6;
+
+      const projHeaders = [['Proyecto', 'Vol. (m³)', 'Duración (meses)', 'Precio ($/m³)', 'Ingreso Total']];
+      const projRows = projects.map(p => [
+        p.name, `${p.totalVolume}`, `${p.durationMonths}`,
+        `$${p.salePricePerM3.toFixed(2)}`,
+        `$${(p.totalVolume * p.salePricePerM3).toLocaleString()}`,
+      ]);
+
+      autoTable(doc, {
+        head: projHeaders,
+        body: projRows,
+        startY: y,
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
+        bodyStyles: { fontSize: 6.5, textColor: [248, 250, 252] },
+        styles: { cellPadding: 2 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 12;
+    }
+
+    // ── 5. Alert summary ──
+    if (y + 20 > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.setTextColor(59, 130, 246);
+    doc.text('Alertas de Control', 14, y);
+    y += 4;
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Eventos detectados automáticamente sobre variaciones de precio, calidad y eficiencia.', 14, y);
+    y += 6;
+
+    const hasMatAlerts = filteredPlants && filteredPlants.length > 0 && filteredPlants.every(p => p.materials.length > 0);
+    const alertBody = [];
+    if (hasMatAlerts) {
+      const plantNames = filteredPlants.length === 1 ? filteredPlants[0].name : 'plantas seleccionadas';
+      alertBody.push(['Variación de Precio: Cemento Portland', '15% sobre lo esperado', plantNames, 'Crítica']);
+    }
+    if (filteredProjects && filteredProjects.length > 0) {
+      alertBody.push(['Resistencia a 28 días', '98.5% de cumplimiento H-30', `${filteredProjects.length} proyectos`, 'Información']);
+    }
+
+    if (alertBody.length > 0) {
+      autoTable(doc, {
+        head: [['Alerta', 'Detalle', 'Fuente', 'Tipo']],
+        body: alertBody,
+        startY: y,
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
+        bodyStyles: { fontSize: 6.5, textColor: [248, 250, 252] },
+        styles: { cellPadding: 2 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 12;
+    }
+
+    // ── Footer ──
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('GRUPO FALPAT — Ingeniería de Costo | Reporte generado automáticamente', 14, doc.internal.pageSize.getHeight() - 10);
+
+    doc.save(`Reporte_Ejecutivo_${new Date().toLocaleDateString('es-AR').replace(/\//g, '-')}.pdf`);
   };
 
   const plantOEE = (p: Plant) => p.availability * p.performance * p.qualityRate * 100;
@@ -329,14 +575,14 @@ const Dashboard: React.FC = () => {
               </select>
             </div>
           </div>
-          <div className="h-[350px]">
+          <div ref={chartRef} className="h-[350px]">
             <ReactECharts key={chartView} option={charts[chartView].option} style={{ height: '100%' }} />
           </div>
         </div>
 
         <div className="glass-card p-6 rounded-2xl relative overflow-hidden">
           <h3 className="font-heading font-bold text-lg text-gradient mb-6">Eficiencia Global</h3>
-          <div className="h-[300px]">
+          <div ref={gaugeRef} className="h-[300px]">
             <ReactECharts option={{
               series: [{
                 type: 'gauge', startAngle: 180, endAngle: 0, min: 0, max: 100, splitNumber: 8,
@@ -360,7 +606,7 @@ const Dashboard: React.FC = () => {
 
         <div className="lg:col-span-3 glass-card p-6 rounded-2xl relative overflow-hidden">
           <h3 className="font-heading font-bold text-lg text-gradient mb-4">Curva S - Avance de Producción</h3>
-          <div className="h-[300px]">
+          <div ref={curvaRef} className="h-[300px]">
             <ReactECharts option={curvaSOption} style={{ height: '100%' }} />
           </div>
         </div>

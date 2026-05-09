@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 
 export const exportToCSV = (data: any[], filename: string) => {
   const csv = Papa.unparse(data);
@@ -22,13 +22,13 @@ export const exportToExcel = (data: any[], filename: string) => {
 };
 
 export const exportToPDF = (title: string, headers: string[][], rows: any[][], filename: string) => {
-  const doc = new jsPDF() as any;
+  const doc = new jsPDF();
   doc.setFontSize(18);
   doc.text(title, 14, 22);
   doc.setFontSize(11);
   doc.setTextColor(100);
   
-  doc.autoTable({
+  autoTable(doc, {
     head: headers,
     body: rows,
     startY: 30,
