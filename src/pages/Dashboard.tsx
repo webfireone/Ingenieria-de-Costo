@@ -6,7 +6,7 @@ import { useFirestoreCollection } from '../hooks/useFirestore';
 import type { Plant, Project } from '../types';
 import { exportToExcel, exportToPDF } from '../services/importExport';
 
-type ChartView = 'pie' | 'heatmap' | 'line';
+type ChartView = 'pie' | 'radar' | 'line';
 
 const Dashboard: React.FC = () => {
   const { data: plants } = useFirestoreCollection<Plant>('plants');
@@ -32,17 +32,64 @@ const Dashboard: React.FC = () => {
 
   const plantOEE = (p: Plant) => p.availability * p.performance * p.qualityRate * 100;
 
+  const filteredPlants = plants && (selectedPlant === 'all' ? plants : plants.filter(p => p.id === selectedPlant));
+
+  const filteredProjects = projects && (selectedPlant === 'all' ? projects : projects.filter(p => p.plantId === selectedPlant));
+
+  const totalMaterialCost = filteredPlants ? filteredPlants.reduce((sum, p) => {
+    return sum + p.materials.reduce((s, m) => s + m.unitPrice * m.quantityPerM3, 0);
+  }, 0) / filteredPlants.length : 0;
+
+  const totalOpVariable = filteredPlants ? filteredPlants.reduce((sum, p) => {
+    return sum + p.operations.reduce((s, o) => s + o.variablePerM3, 0);
+  }, 0) / filteredPlants.length : 0;
+
+  const totalOpFixed = filteredPlants ? filteredPlants.reduce((sum, p) => {
+    return sum + p.operations.reduce((s, o) => s + o.monthlyFixed, 0) / p.installedCapacity;
+  }, 0) / filteredPlants.length : 0;
+
+  const totalOp = totalOpVariable + totalOpFixed;
+  const totalAll = totalMaterialCost + totalOp;
+
+  const monthlyProduction = filteredPlants ? Math.round(filteredPlants.reduce((s, p) => s + p.installedCapacity * p.performance, 0)) : 4250;
+
+  const avgSalePrice = filteredProjects && filteredProjects.length > 0
+    ? filteredProjects.reduce((s, p) => s + p.salePricePerM3, 0) / filteredProjects.length
+    : 200;
+
+  const grossMargin = avgSalePrice > 0 ? ((avgSalePrice - totalAll) / avgSalePrice * 100) : 28.4;
+
+  const totalVolume = filteredProjects ? filteredProjects.reduce((s, p) => s + p.totalVolume, 0) : 0;
+  const avgDuration = filteredProjects && filteredProjects.length > 0
+    ? filteredProjects.reduce((s, p) => s + p.durationMonths, 0) / filteredProjects.length
+    : 12;
+
+  const yearlyRevenue = totalVolume * avgSalePrice / (avgDuration / 12 || 1);
+  const yearlyCost = totalVolume * totalAll / (avgDuration / 12 || 1);
+  const vanEst = yearlyRevenue - yearlyCost;
+  const roi = yearlyCost > 0 ? ((yearlyRevenue - yearlyCost) / yearlyCost * 100) : 18.3;
+  const paybackMonths = monthlyProduction > 0 && totalAll > 0
+    ? Math.round(totalVolume * totalAll / (monthlyProduction * (avgSalePrice - totalAll)) * 12)
+    : 14;
+
+  const productividad = filteredPlants && filteredPlants.length > 0
+    ? (filteredPlants.reduce((s, p) => s + p.installedCapacity * p.performance, 0) / (25 * 8 * filteredPlants.length)).toFixed(1)
+    : '8.2';
+
   const costDistributionOption = {
     backgroundColor: 'transparent',
-    tooltip: { trigger: 'item' },
+    tooltip: { trigger: 'item', formatter: '{b}: ${c} /m³ ({d}%)' },
     series: [{
-      name: 'Distribución de Costos',
-      type: 'pie',
-      radius: ['40%', '70%'],
+      name: 'Distribución de Costos', type: 'pie', radius: ['40%', '70%'],
       avoidLabelOverlap: false,
       itemStyle: { borderRadius: 10, borderColor: '#0f172a', borderWidth: 2 },
       label: { show: false },
-      data: [
+      data: totalAll > 0 ? [
+        { value: Math.round(totalMaterialCost), name: 'Materiales', itemStyle: { color: '#3b82f6' } },
+        { value: Math.round(totalOp), name: 'Operación', itemStyle: { color: '#10b981' } },
+        { value: Math.round(totalOp * 0.3), name: 'Mantenimiento', itemStyle: { color: '#f59e0b' } },
+        { value: Math.round(totalMaterialCost * 0.15), name: 'Logística', itemStyle: { color: '#6366f1' } },
+      ] : [
         { value: 45, name: 'Materiales', itemStyle: { color: '#3b82f6' } },
         { value: 25, name: 'Operación', itemStyle: { color: '#10b981' } },
         { value: 20, name: 'Mantenimiento', itemStyle: { color: '#f59e0b' } },
@@ -51,57 +98,106 @@ const Dashboard: React.FC = () => {
     }]
   };
 
-  const heatmapData: [number, number, number][] = [];
-  const plantNames = plants?.map(p => p.name) ?? ['Planta Norte', 'Planta Sur'];
+  const plantNames = filteredPlants?.map(p => p.name) ?? ['Planta Norte', 'Planta Sur'];
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  const baseCosts = [142, 138, 145, 140, 155, 150, 148, 160, 158, 165, 170, 162];
 
-  plantNames.forEach((_, pi) => {
-    months.forEach((_, mi) => {
-      heatmapData.push([mi, pi, baseCosts[mi] + Math.floor(Math.random() * 20 - 10)]);
-    });
-  });
-
-  const heatmapOption = {
+  const radarOption = {
     backgroundColor: 'transparent',
-    tooltip: { position: 'top', formatter: (p: any) => `${months[p.data[0]]} - ${plantNames[p.data[1]]}<br/>$${p.data[2]}/m³` },
-    xAxis: { type: 'category', data: months, axisLabel: { color: '#94a3b8' }, splitArea: { show: true } },
-    yAxis: { type: 'category', data: plantNames, axisLabel: { color: '#94a3b8' }, splitArea: { show: true } },
-    visualMap: { min: 120, max: 180, calculable: true, orient: 'horizontal', left: 'center', bottom: '5%', inRange: { color: ['#1e3a5f', '#3b82f6', '#f59e0b', '#ef4444'] } },
-    series: [{ type: 'heatmap', data: heatmapData, label: { show: true, color: '#fff', fontSize: 11 }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } } }],
-    grid: { left: '15%', right: '5%', top: '5%', bottom: '20%', containLabel: true },
+    tooltip: {},
+    legend: { data: plantNames, textStyle: { color: '#94a3b8' }, bottom: 0 },
+    radar: {
+      indicator: [
+        { name: 'Disponibilidad', max: 100 },
+        { name: 'Rendimiento', max: 100 },
+        { name: 'Calidad', max: 100 },
+        { name: 'OEE', max: 100 },
+        { name: 'Eficiencia Costo', max: 100 },
+      ],
+      axisName: { color: '#94a3b8' },
+      splitArea: { areaStyle: { color: ['rgba(59,130,246,0.02)', 'rgba(59,130,246,0.05)'] } },
+      splitLine: { lineStyle: { color: '#1e293b' } },
+    },
+    series: [{
+      type: 'radar',
+      data: (filteredPlants ?? []).map((plant, i) => {
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#6366f1'];
+        const oee = plantOEE(plant);
+        const matCost = plant.materials.reduce((s, m) => s + m.unitPrice * m.quantityPerM3, 0);
+        const opCost = plant.operations.reduce((s, o) => s + o.variablePerM3, 0) +
+          plant.operations.reduce((s, o) => s + o.monthlyFixed, 0) / plant.installedCapacity;
+        const totalCost = matCost + opCost;
+        const costEfficiency = Math.min(100, Math.max(0, 100 - (totalCost - 80) * 0.8));
+        return {
+          name: plant.name,
+          value: [
+            plant.availability * 100,
+            plant.performance * 100,
+            plant.qualityRate * 100,
+            oee,
+            Math.round(costEfficiency),
+          ],
+          lineStyle: { color: colors[i % colors.length], width: 2 },
+          areaStyle: { color: colors[i % colors.length], opacity: 0.1 },
+          itemStyle: { color: colors[i % colors.length] },
+        };
+      }),
+    }],
   };
 
   const lineChartOption = {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis' },
-    legend: { data: ['Planta Norte', 'Planta Sur'], textStyle: { color: '#94a3b8' } },
+    legend: { data: plantNames, textStyle: { color: '#94a3b8' } },
     xAxis: { type: 'category', data: months, axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#1e293b' } } },
     yAxis: { type: 'value', name: 'Costo $/m³', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#1e293b' } } },
-    series: [
+    series: filteredPlants?.map((plant, i) => {
+      const matCost = plant.materials.reduce((s, m) => s + m.unitPrice * m.quantityPerM3, 0);
+      const opCost = plant.operations.reduce((s, o) => s + o.variablePerM3, 0) +
+        plant.operations.reduce((s, o) => s + o.monthlyFixed, 0) / plant.installedCapacity;
+      const plantBase = Math.round(matCost + opCost);
+      const seasonal = [0, -2, 1, -1, 3, 2, -1, 4, 2, 5, 3, 1];
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#6366f1'];
+      const symbols = ['circle', 'diamond', 'triangle', 'rect'];
+      return {
+        name: plant.name,
+        type: 'line',
+        data: seasonal.map(s => plantBase + s),
+        smooth: true,
+        lineStyle: { color: colors[i % colors.length], width: 3 },
+        symbol: symbols[i % symbols.length] as any,
+        symbolSize: 8,
+        areaStyle: { opacity: 0.1, color: colors[i % colors.length] },
+      };
+    }) ?? [
       { name: 'Planta Norte', type: 'line', data: [142, 138, 145, 140, 155, 150, 148, 160, 158, 165, 170, 162], smooth: true, lineStyle: { color: '#3b82f6', width: 3 }, symbol: 'circle', symbolSize: 8, areaStyle: { opacity: 0.1, color: '#3b82f6' } },
       { name: 'Planta Sur', type: 'line', data: [135, 140, 138, 142, 148, 145, 150, 155, 152, 158, 162, 157], smooth: true, lineStyle: { color: '#10b981', width: 3 }, symbol: 'diamond', symbolSize: 8, areaStyle: { opacity: 0.1, color: '#10b981' } },
     ],
     grid: { left: '10%', right: '5%', bottom: '15%', containLabel: true },
   };
 
-  const curvaSOption = {
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['Planificado', 'Real', 'Variación'], textStyle: { color: '#94a3b8' } },
-    xAxis: { type: 'category', data: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'], axisLabel: { color: '#94a3b8' } },
-    yAxis: { type: 'value', name: 'm³ acumulados', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#1e293b' } } },
-    series: [
-      { name: 'Planificado', type: 'line', data: [400, 900, 1500, 2200, 3000, 3800, 4600, 5400, 6200, 7000, 7800, 8500], smooth: true, lineStyle: { color: '#3b82f6', width: 3, type: 'dashed' }, symbol: 'none' },
-      { name: 'Real', type: 'line', data: [380, 850, 1400, 2100, 2800, 3600, 4500, 5200, 6100, 6800, 7600, 8300], smooth: true, lineStyle: { color: '#10b981', width: 3 }, symbol: 'circle', areaStyle: { opacity: 0.1, color: '#10b981' } },
-      { name: 'Variación', type: 'bar', data: [-20, -50, -100, -100, -200, -200, -100, -200, -100, -200, -200, -200], itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] } },
-    ],
-    grid: { left: '10%', right: '5%', bottom: '15%', containLabel: true },
-  };
+  const curvaSOption = (() => {
+    const totalPlan = filteredProjects ? filteredProjects.reduce((s, p) => s + p.totalVolume, 0) : 8500;
+    const plan = months.map((_, i) => Math.round(totalPlan * ((i + 1) / months.length)));
+    const real = plan.map(v => Math.round(v * 0.95));
+    const varian = plan.map((v, i) => real[i] - v);
+    return {
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['Planificado', 'Real', 'Variación'], textStyle: { color: '#94a3b8' } },
+      xAxis: { type: 'category', data: months, axisLabel: { color: '#94a3b8' } },
+      yAxis: { type: 'value', name: 'm³ acumulados', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#1e293b' } } },
+      series: [
+        { name: 'Planificado', type: 'line', data: plan, smooth: true, lineStyle: { color: '#3b82f6', width: 3, type: 'dashed' }, symbol: 'none' },
+        { name: 'Real', type: 'line', data: real, smooth: true, lineStyle: { color: '#10b981', width: 3 }, symbol: 'circle', areaStyle: { opacity: 0.1, color: '#10b981' } },
+        { name: 'Variación', type: 'bar', data: varian, itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] } },
+      ],
+      grid: { left: '10%', right: '5%', bottom: '15%', containLabel: true },
+    };
+  })();
 
   const charts: Record<ChartView, { option: any; label: string; icon: any }> = {
     pie: { option: costDistributionOption, label: 'Distribución', icon: PieChart },
-    heatmap: { option: heatmapOption, label: 'Heatmap', icon: LayoutDashboard },
+    radar: { option: radarOption, label: 'Radar KPIs', icon: LayoutDashboard },
     line: { option: lineChartOption, label: 'Evolución', icon: BarChart3 },
   };
 
@@ -117,17 +213,17 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <KPICard title="Producción Mensual" value="4,250 m³" icon={Factory} trend={{ value: 12, isUp: true }} description="vs mes anterior" />
-        <KPICard title="Costo Promedio" value="$142.50 /m³" icon={DollarSign} trend={{ value: 3, isUp: false }} description="Materiales + Operación" />
-        <KPICard title="Margen Bruto" value="28.4%" icon={TrendingUp} trend={{ value: 5, isUp: true }} description="Promedio consolidado" />
-        <KPICard title="Eficiencia (OEE)" value={`${plants && plants.length > 0 ? plants.reduce((s, p) => s + plantOEE(p), 0) / plants.length : 88.2}%`} icon={Activity} trend={{ value: 2, isUp: true }} description="Disponibilidad x Rend x Cal" />
+        <KPICard title="Producción Mensual" value={`${monthlyProduction.toLocaleString()} m³`} icon={Factory} trend={{ value: 12, isUp: true }} description="vs mes anterior" />
+        <KPICard title="Costo Promedio" value={`$${totalAll.toFixed(2)} /m³`} icon={DollarSign} trend={{ value: 3, isUp: false }} description="Materiales + Operación" />
+        <KPICard title="Margen Bruto" value={`${grossMargin.toFixed(1)}%`} icon={TrendingUp} trend={{ value: 5, isUp: true }} description="Promedio consolidado" />
+        <KPICard title="Eficiencia (OEE)" value={`${(filteredPlants && filteredPlants.length > 0 ? filteredPlants.reduce((s, p) => s + plantOEE(p), 0) / filteredPlants.length : plants && plants.length > 0 ? plants.reduce((s, p) => s + plantOEE(p), 0) / plants.length : 88.2).toFixed(2)}%`} icon={Activity} trend={{ value: 2, isUp: true }} description="Disponibilidad x Rend x Cal" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <KPICard title="VAN Estimado" value="$1,245k" icon={Target} trend={{ value: 8, isUp: true }} description="Proyectos activos" />
-        <KPICard title="ROI Proyectado" value="18.3%" icon={TrendingUp} trend={{ value: 2, isUp: true }} description="Retorno sobre inversión" />
-        <KPICard title="Payback" value="14 meses" icon={Clock} trend={{ value: 1, isUp: false }} description="Recuperación estimada" />
-        <KPICard title="Productividad" value="8.2 m³/h/día" icon={Users} trend={{ value: 4, isUp: true }} description="Promedio por cuadrilla" />
+        <KPICard title="VAN Estimado" value={`$${(vanEst / 1000).toFixed(0)}k`} icon={Target} trend={{ value: 8, isUp: true }} description="Proyectos activos" />
+        <KPICard title="ROI Proyectado" value={`${roi.toFixed(2)}%`} icon={TrendingUp} trend={{ value: 2, isUp: true }} description="Retorno sobre inversión" />
+        <KPICard title="Payback" value={`${paybackMonths} meses`} icon={Clock} trend={{ value: 1, isUp: false }} description="Recuperación estimada" />
+        <KPICard title="Productividad" value={`${productividad} m³/h/día`} icon={Users} trend={{ value: 4, isUp: true }} description="Promedio por cuadrilla" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -152,7 +248,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="h-[300px]">
-            <ReactECharts option={charts[chartView].option} style={{ height: '100%' }} />
+            <ReactECharts key={chartView} option={charts[chartView].option} style={{ height: '100%' }} />
           </div>
         </div>
 
@@ -166,7 +262,7 @@ const Dashboard: React.FC = () => {
                 pointer: { icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z', length: '12%', width: 20, offsetCenter: [0, '-60%'], itemStyle: { color: 'auto' } },
                 axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
                 detail: { fontSize: 30, offsetCenter: [0, '-20%'], valueAnimation: true, formatter: '{value}%', color: 'inherit' },
-                data: [{ value: plants && plants.length > 0 ? plants.reduce((s, p) => s + plantOEE(p), 0) / plants.length : 88, name: 'OEE Global' }]
+                data: [{ value: Math.round(filteredPlants && filteredPlants.length > 0 ? filteredPlants.reduce((s, p) => s + plantOEE(p), 0) / filteredPlants.length : plants && plants.length > 0 ? plants.reduce((s, p) => s + plantOEE(p), 0) / plants.length : 88), name: 'OEE' }]
               }]
             }} style={{ height: '100%' }} />
           </div>
@@ -179,31 +275,38 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-3 glass-card p-6 rounded-xl">
-          <h3 className="font-bold text-lg mb-4">Alertas de Control & Calidad</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <div className="flex items-center gap-4">
-                <AlertTriangle className="text-red-500" />
-                <div>
-                  <p className="font-medium">Variación de Precio: Cemento Portland</p>
-                  <p className="text-sm text-muted-foreground">Incremento del 15% detectado en Planta Norte</p>
+          <div className="lg:col-span-3 glass-card p-6 rounded-xl">
+            <h3 className="font-bold text-lg mb-4">Alertas de Control & Calidad</h3>
+            <div className="space-y-4">
+              {filteredPlants && filteredPlants.length > 0 && filteredPlants.every(p => p.materials.length > 0) && (
+                <div className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <AlertTriangle className="text-red-500" />
+                    <div>
+                      <p className="font-medium">Variación de Precio: Cemento Portland</p>
+                      <p className="text-sm text-muted-foreground">Incremento del 15% detectado en {filteredPlants.length === 1 ? filteredPlants[0].name : 'plantas seleccionadas'}</p>
+                    </div>
+                  </div>
+                  <button className="text-sm font-bold text-red-500">RECALCULAR</button>
                 </div>
-              </div>
-              <button className="text-sm font-bold text-red-500">RECALCULAR</button>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <div className="flex items-center gap-4">
-                <CheckCircle2 className="text-green-500" />
-                <div>
-                  <p className="font-medium">Resistencia a 28 días - Proyecto Skyline</p>
-                  <p className="text-sm text-muted-foreground">98.5% de cumplimiento en muestras H-30</p>
+              )}
+              {filteredProjects && filteredProjects.length > 0 && (
+                <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <CheckCircle2 className="text-green-500" />
+                    <div>
+                      <p className="font-medium">Resistencia a 28 días - {filteredProjects.length === 1 ? filteredProjects[0].name : `${filteredProjects.length} proyectos`}</p>
+                      <p className="text-sm text-muted-foreground">98.5% de cumplimiento en muestras H-30</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Hace 2 horas</span>
                 </div>
-              </div>
-              <span className="text-xs text-muted-foreground">Hace 2 horas</span>
+              )}
+              {(!filteredPlants || filteredPlants.length === 0) && (
+                <p className="text-muted-foreground text-sm">No hay datos para la planta seleccionada.</p>
+              )}
             </div>
           </div>
-        </div>
       </div>
     </>
   );

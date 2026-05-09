@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Bell, AlertTriangle, AlertCircle, Info, CheckCircle2, Settings, SlidersHorizontal, Weight, Gauge, DollarSign, Factory } from 'lucide-react';
 import KPICard from '../components/KPICard';
+import { useFirestoreCollection } from '../hooks/useFirestore';
+import type { Plant } from '../types';
 
 interface AlertConfig {
   priceVariation: number;
@@ -18,6 +20,7 @@ interface AlertEvent {
   source: string;
   date: string;
   resolved: boolean;
+  resolvedAt?: string;
 }
 
 const defaultConfig: AlertConfig = {
@@ -29,38 +32,68 @@ const defaultConfig: AlertConfig = {
 };
 
 const defaultAlerts: AlertEvent[] = [
-  { id: 'A-001', type: 'critica', title: 'Variación de Precio: Cemento Portland', description: 'Incremento del 15% detectado en Planta Norte', source: 'Insumos', date: '2026-05-08', resolved: false },
-  { id: 'A-002', type: 'advertencia', title: 'OEE por debajo del umbral', description: 'Planta Sur registra 72% de OEE (mínimo: 75%)', source: 'Eficiencia', date: '2026-05-07', resolved: false },
+  { id: 'A-001', type: 'critica', title: 'Variación de Precio: Cemento Portland', description: 'Incremento del 15% detectado en {plant-north}', source: 'Insumos', date: '2026-05-08', resolved: false },
+  { id: 'A-002', type: 'advertencia', title: 'OEE por debajo del umbral', description: '{plant-south} registra 72% de OEE (mínimo: 75%)', source: 'Eficiencia', date: '2026-05-07', resolved: false },
   { id: 'A-003', type: 'advertencia', title: 'Desviación de Slump en muestra', description: 'Muestra M-004: slump 18cm (objetivo: 12cm)', source: 'Calidad', date: '2026-05-06', resolved: false },
-  { id: 'A-004', type: 'info', title: 'Mantenimiento preventivo programado', description: 'Planta Norte - Cambio de mezclador (22 de mayo)', source: 'Mantenimiento', date: '2026-05-05', resolved: false },
-  { id: 'A-005', type: 'critica', title: 'Resistencia 28d por debajo de especificación', description: 'Muestra M-004: 27.1 MPa (objetivo: 30 MPa)', source: 'Calidad', date: '2026-05-04', resolved: true },
-  { id: 'A-006', type: 'info', title: 'Producción mensual estable', description: '4,250 m³ producidos en el mes', source: 'Producción', date: '2026-05-03', resolved: true },
+  { id: 'A-004', type: 'info', title: 'Mantenimiento preventivo programado', description: '{plant-north} - Cambio de mezclador (22 de mayo)', source: 'Mantenimiento', date: '2026-05-05', resolved: false },
+  { id: 'A-005', type: 'critica', title: 'Resistencia 28d por debajo de especificación', description: 'Muestra M-004: 27.1 MPa (objetivo: 30 MPa)', source: 'Calidad', date: '2026-05-04', resolved: true, resolvedAt: '2026-05-09' },
+  { id: 'A-006', type: 'info', title: 'Producción mensual estable', description: '4,250 m³ producidos en el mes', source: 'Producción', date: '2026-05-03', resolved: true, resolvedAt: '2026-05-09' },
 ];
 
 const Alerts: React.FC = () => {
+  const { data: plants } = useFirestoreCollection<Plant>('plants');
   const [config, setConfig] = useState<AlertConfig>(() => {
     const saved = localStorage.getItem('alert_config');
     return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
   });
-  const [alerts, setAlerts] = useState<AlertEvent[]>(defaultAlerts);
+  const [alerts, setAlerts] = useState<AlertEvent[]>(() => {
+    const saved = localStorage.getItem('alert_data');
+    return saved ? JSON.parse(saved) : defaultAlerts;
+  });
   const [showResolved, setShowResolved] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+
+  const plantMap = useMemo(() => {
+    if (!plants) return {} as Record<string, string>;
+    return Object.fromEntries(plants.map(p => [p.id, p.name]));
+  }, [plants]);
+
+  const resolvedAlerts = useMemo(() =>
+    alerts.map(a => ({
+      ...a,
+      description: a.description.replace(/\{([^}]+)\}/g, (_, id) => plantMap[id] ?? id),
+    })),
+  [alerts, plantMap]);
 
   useEffect(() => {
     localStorage.setItem('alert_config', JSON.stringify(config));
   }, [config]);
 
-  const activeAlerts = alerts.filter(a => !a.resolved);
+  useEffect(() => {
+    localStorage.setItem('alert_data', JSON.stringify(alerts));
+  }, [alerts]);
+
+  const fmtDatetime = () => new Date().toLocaleString('es-AR', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  });
+
+  const activeAlerts = resolvedAlerts.filter(a => !a.resolved);
   const critical = activeAlerts.filter(a => a.type === 'critica').length;
   const warnings = activeAlerts.filter(a => a.type === 'advertencia').length;
   const infoCount = activeAlerts.filter(a => a.type === 'info').length;
   const resolvedToday = alerts.filter(a => a.resolved).length;
 
   const resolveAlert = (id: string) => {
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, resolved: true } : a));
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, resolved: true, resolvedAt: fmtDatetime() } : a));
   };
 
-  const displayAlerts = showResolved ? alerts : activeAlerts;
+  const reactivateAlert = (id: string) => {
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, resolved: false, resolvedAt: undefined } : a));
+  };
+
+  const displayAlerts = showResolved ? resolvedAlerts : activeAlerts;
 
   const typeIcon = { critica: AlertCircle, advertencia: AlertTriangle, info: Info };
   const typeColor = { critica: 'text-red-500 bg-red-500/10 border-red-500/20', advertencia: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20', info: 'text-blue-500 bg-blue-500/10 border-blue-500/20' };
@@ -151,14 +184,19 @@ const Alerts: React.FC = () => {
                     <p className="text-sm text-muted-foreground">{alert.description}</p>
                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                       <span>{alert.source}</span>
-                      <span>{alert.date}</span>
+                      <span>Inicio: {alert.date}</span>
+                      {alert.resolvedAt && <span>Solucionado: {alert.resolvedAt}</span>}
                       <span className="font-mono">{alert.id}</span>
                     </div>
                   </div>
                 </div>
-                {!alert.resolved && (
+                {!alert.resolved ? (
                   <button onClick={() => resolveAlert(alert.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all whitespace-nowrap">
                     <CheckCircle2 className="w-3 h-3" /> Resolver
+                  </button>
+                ) : (
+                  <button onClick={() => reactivateAlert(alert.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-all whitespace-nowrap">
+                    <AlertTriangle className="w-3 h-3" /> Reactivar
                   </button>
                 )}
               </div>

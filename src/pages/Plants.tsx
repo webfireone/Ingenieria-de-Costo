@@ -196,6 +196,64 @@ const Plants: React.FC = () => {
               <input type="number" min="0" max="1" step="0.01" value={form.qualityRate} onChange={e => setForm(f => ({ ...f, qualityRate: Number(e.target.value) }))} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             </div>
           </div>
+          <div className="border-t border-border pt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold flex items-center gap-1"><Package className="w-4 h-4" /> Materiales</h4>
+              <button onClick={() => setForm(f => ({ ...f, materials: [...f.materials, { id: `mat-${Date.now()}`, name: '', unit: 'ton', unitPrice: 0, quantityPerM3: 0 }] }))} className="text-xs font-bold text-primary hover:underline">+ Agregar</button>
+            </div>
+            {form.materials.length === 0 && <p className="text-xs text-muted-foreground">Sin materiales. Agregue al menos uno.</p>}
+            {form.materials.length > 0 && (
+              <div className="grid grid-cols-12 gap-1 text-xs text-muted-foreground font-medium px-2">
+                <span className="col-span-3">Material</span>
+                <span className="col-span-2">Unidad</span>
+                <span className="col-span-2">Precio Unit.</span>
+                <span className="col-span-2">Cant./m³</span>
+                <span className="col-span-2">Costo/m³</span>
+                <span className="col-span-1" />
+              </div>
+            )}
+            {form.materials.map((mat, idx) => (
+              <div key={mat.id} className="grid grid-cols-12 gap-1 items-center text-xs bg-card p-2 rounded-lg border border-border">
+                <input type="text" value={mat.name} onChange={e => setForm(f => ({ ...f, materials: f.materials.map((m, i) => i === idx ? { ...m, name: e.target.value } : m) }))} className="col-span-3 bg-background border border-border rounded px-1.5 py-1 text-xs" placeholder="Nombre" />
+                <select value={mat.unit} onChange={e => setForm(f => ({ ...f, materials: f.materials.map((m, i) => i === idx ? { ...m, unit: e.target.value } : m) }))} className="col-span-2 bg-background border border-border rounded px-1.5 py-1 text-xs">
+                  <option value="ton">ton</option>
+                  <option value="m3">m³</option>
+                  <option value="kg">kg</option>
+                  <option value="litro">litro</option>
+                  <option value="unidad">unidad</option>
+                </select>
+                <input type="number" step="0.01" value={mat.unitPrice} onChange={e => setForm(f => ({ ...f, materials: f.materials.map((m, i) => i === idx ? { ...m, unitPrice: Number(e.target.value) } : m) }))} className="col-span-2 bg-background border border-border rounded px-1.5 py-1 text-xs w-full" placeholder="Precio" />
+                <input type="number" step="0.01" value={mat.quantityPerM3} onChange={e => setForm(f => ({ ...f, materials: f.materials.map((m, i) => i === idx ? { ...m, quantityPerM3: Number(e.target.value) } : m) }))} className="col-span-2 bg-background border border-border rounded px-1.5 py-1 text-xs w-full" placeholder="Cant/m³" />
+                <span className="col-span-2 text-right font-medium">${(mat.unitPrice * mat.quantityPerM3).toFixed(2)}</span>
+                <button onClick={() => setForm(f => ({ ...f, materials: f.materials.filter((_, i) => i !== idx) }))} className="col-span-1 p-1 rounded hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold flex items-center gap-1">⚙️ Costos Operativos</h4>
+              <button onClick={() => setForm(f => ({ ...f, operations: [...f.operations, { id: `op-${Date.now()}`, name: '', monthlyFixed: 0, variablePerM3: 0 }] }))} className="text-xs font-bold text-primary hover:underline">+ Agregar</button>
+            </div>
+            {form.operations.length === 0 && <p className="text-xs text-muted-foreground">Sin costos operativos.</p>}
+            {form.operations.length > 0 && (
+              <div className="grid grid-cols-12 gap-1 text-xs text-muted-foreground font-medium px-2">
+                <span className="col-span-4">Concepto</span>
+                <span className="col-span-3">Costo Fijo/mes</span>
+                <span className="col-span-3">Costo Var./m³</span>
+                <span className="col-span-1" />
+              </div>
+            )}
+            {form.operations.map((op, idx) => (
+              <div key={op.id} className="grid grid-cols-12 gap-1 items-center text-xs bg-card p-2 rounded-lg border border-border">
+                <input type="text" value={op.name} onChange={e => setForm(f => ({ ...f, operations: f.operations.map((o, i) => i === idx ? { ...o, name: e.target.value } : o) }))} className="col-span-4 bg-background border border-border rounded px-1.5 py-1 text-xs" placeholder="Concepto" />
+                <input type="number" step="1" value={op.monthlyFixed} onChange={e => setForm(f => ({ ...f, operations: f.operations.map((o, i) => i === idx ? { ...o, monthlyFixed: Number(e.target.value) } : o) }))} className="col-span-3 bg-background border border-border rounded px-1.5 py-1 text-xs w-full" placeholder="Fijo/mes" />
+                <input type="number" step="0.01" value={op.variablePerM3} onChange={e => setForm(f => ({ ...f, operations: f.operations.map((o, i) => i === idx ? { ...o, variablePerM3: Number(e.target.value) } : o) }))} className="col-span-3 bg-background border border-border rounded px-1.5 py-1 text-xs w-full" placeholder="Var/m³" />
+                <button onClick={() => setForm(f => ({ ...f, operations: f.operations.filter((_, i) => i !== idx) }))} className="col-span-1 p-1 rounded hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <button onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
             <button onClick={handleSave} disabled={isSaving || !form.name || !form.location} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:scale-105 transition-all disabled:opacity-50">

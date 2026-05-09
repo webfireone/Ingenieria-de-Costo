@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { ClipboardCheck, FlaskConical, AlertTriangle, CheckCircle2, XCircle, TrendingUp, Activity } from 'lucide-react';
 import KPICard from '../components/KPICard';
+import { useFirestoreCollection } from '../hooks/useFirestore';
+import type { Plant, Project } from '../types';
 
 interface Sample {
   id: string;
   project: string;
+  plant: string;
   concreteClass: string;
   slump: number;
   slumpTarget: number;
@@ -16,19 +19,38 @@ interface Sample {
   status: 'aprobado' | 'rechazado' | 'en_curso';
 }
 
-const samples: Sample[] = [
-  { id: 'M-001', project: 'Skyline Towers', concreteClass: 'H-30', slump: 12, slumpTarget: 12, resistance7d: 22.5, resistance28d: 32.8, resistanceTarget: 30, date: '2026-04-28', status: 'aprobado' },
-  { id: 'M-002', project: 'Skyline Towers', concreteClass: 'H-30', slump: 14, slumpTarget: 12, resistance7d: 20.1, resistance28d: 30.2, resistanceTarget: 30, date: '2026-04-25', status: 'aprobado' },
+const rawSamples: Omit<Sample, 'plant'>[] = [
+  { id: 'M-001', project: 'Edificio Skyline Towers', concreteClass: 'H-30', slump: 12, slumpTarget: 12, resistance7d: 22.5, resistance28d: 32.8, resistanceTarget: 30, date: '2026-04-28', status: 'aprobado' },
+  { id: 'M-002', project: 'Edificio Skyline Towers', concreteClass: 'H-30', slump: 14, slumpTarget: 12, resistance7d: 20.1, resistance28d: 30.2, resistanceTarget: 30, date: '2026-04-25', status: 'aprobado' },
   { id: 'M-003', project: 'Puente Interurbano', concreteClass: 'H-40', slump: 10, slumpTarget: 10, resistance7d: 28.3, resistance28d: 41.5, resistanceTarget: 40, date: '2026-04-22', status: 'aprobado' },
-  { id: 'M-004', project: 'Skyline Towers', concreteClass: 'H-30', slump: 18, slumpTarget: 12, resistance7d: 18.2, resistance28d: 27.1, resistanceTarget: 30, date: '2026-04-20', status: 'rechazado' },
+  { id: 'M-004', project: 'Edificio Skyline Towers', concreteClass: 'H-30', slump: 18, slumpTarget: 12, resistance7d: 18.2, resistance28d: 27.1, resistanceTarget: 30, date: '2026-04-20', status: 'rechazado' },
   { id: 'M-005', project: 'Puente Interurbano', concreteClass: 'H-40', slump: 9, slumpTarget: 10, resistance7d: 26.8, resistance28d: 39.7, resistanceTarget: 40, date: '2026-04-18', status: 'en_curso' },
-  { id: 'M-006', project: 'Skyline Towers', concreteClass: 'H-30', slump: 13, slumpTarget: 12, resistance7d: 21.0, resistance28d: 31.5, resistanceTarget: 30, date: '2026-04-15', status: 'aprobado' },
+  { id: 'M-006', project: 'Edificio Skyline Towers', concreteClass: 'H-30', slump: 13, slumpTarget: 12, resistance7d: 21.0, resistance28d: 31.5, resistanceTarget: 30, date: '2026-04-15', status: 'aprobado' },
   { id: 'M-007', project: 'Puente Interurbano', concreteClass: 'H-40', slump: 11, slumpTarget: 10, resistance7d: 27.5, resistance28d: 40.2, resistanceTarget: 40, date: '2026-04-12', status: 'aprobado' },
-  { id: 'M-008', project: 'Skyline Towers', concreteClass: 'H-30', slump: 15, slumpTarget: 12, resistance7d: 19.4, resistance28d: 28.9, resistanceTarget: 30, date: '2026-04-10', status: 'rechazado' },
+  { id: 'M-008', project: 'Edificio Skyline Towers', concreteClass: 'H-30', slump: 15, slumpTarget: 12, resistance7d: 19.4, resistance28d: 28.9, resistanceTarget: 30, date: '2026-04-10', status: 'rechazado' },
 ];
 
 const Quality: React.FC = () => {
+  const { data: plants } = useFirestoreCollection<Plant>('plants');
+  const { data: projects } = useFirestoreCollection<Project>('projects');
   const [filter, setFilter] = useState<'todos' | 'aprobado' | 'rechazado' | 'en_curso'>('todos');
+
+  const projectPlantMap = useMemo(() => {
+    if (!projects || !plants) return {} as Record<string, string>;
+    const plantMap = new Map(plants.map(p => [p.id, p.name]));
+    const map: Record<string, string> = {};
+    projects.forEach(proj => {
+      map[proj.name] = plantMap.get(proj.plantId) ?? proj.plantId;
+    });
+    return map;
+  }, [projects, plants]);
+
+  const samples: Sample[] = useMemo(() =>
+    rawSamples.map(s => ({
+      ...s,
+      plant: projectPlantMap[s.project] ?? 'Sin planta',
+    })),
+  [projectPlantMap]);
 
   const filtered = filter === 'todos' ? samples : samples.filter(s => s.status === filter);
   const approved = samples.filter(s => s.status === 'aprobado').length;
@@ -98,6 +120,7 @@ const Quality: React.FC = () => {
               <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left py-3 px-4">Muestra</th>
                 <th className="text-left py-3 px-4">Proyecto</th>
+                <th className="text-left py-3 px-4">Planta</th>
                 <th className="text-center py-3 px-4">Clase</th>
                 <th className="text-center py-3 px-4">Slump (cm)</th>
                 <th className="text-right py-3 px-4">R 7d (MPa)</th>
@@ -111,6 +134,7 @@ const Quality: React.FC = () => {
                 <tr key={s.id} className="border-b border-border/50 hover:bg-primary/5 transition-colors">
                   <td className="py-3 px-4 font-medium">{s.id}</td>
                   <td className="py-3 px-4">{s.project}</td>
+                  <td className="py-3 px-4 text-muted-foreground">{s.plant}</td>
                   <td className="py-3 px-4 text-center">{s.concreteClass}</td>
                   <td className="py-3 px-4 text-center">
                     <span className={s.slump === s.slumpTarget ? 'text-green-500' : Math.abs(s.slump - s.slumpTarget) <= 2 ? 'text-yellow-500' : 'text-red-500'}>

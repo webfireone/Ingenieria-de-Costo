@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { Factory, BarChart4, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import { Factory, BarChart4, TrendingUp, DollarSign, Activity, RefreshCw } from 'lucide-react';
 import KPICard from '../components/KPICard';
 import { useFirestoreCollection } from '../hooks/useFirestore';
 import type { Plant } from '../types';
 
 const Comparativa: React.FC = () => {
-  const { data: plants } = useFirestoreCollection<Plant>('plants');
+  const { data: plants, refetch, isFetching } = useFirestoreCollection<Plant>('plants');
 
   const avgOEE = (p: Plant) => (p.availability * p.performance * p.qualityRate * 100).toFixed(1);
   const unitCost = (p: Plant) => p.materials.reduce((s, m) => s + m.unitPrice * m.quantityPerM3, 0);
@@ -41,7 +41,12 @@ const Comparativa: React.FC = () => {
       </div>
 
       <div className="glass-card p-6 rounded-xl mb-6">
-        <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><BarChart4 className="w-5 h-5" /> Comparativa de Plantas</h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-bold text-lg flex items-center gap-2"><BarChart4 className="w-5 h-5" /> Comparativa de Plantas</h3>
+          <button onClick={() => refetch()} disabled={isFetching} className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-lg text-sm font-bold hover:bg-primary/10 transition-all disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} /> Refrescar
+          </button>
+        </div>
         <div className="h-[350px]"><ReactECharts option={barOption} style={{ height: '100%' }} /></div>
       </div>
 

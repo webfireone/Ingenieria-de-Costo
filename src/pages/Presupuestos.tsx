@@ -3,6 +3,8 @@ import { FileText, Plus, Pen, Trash2, Calculator, DollarSign, Percent, Truck, Ha
 import KPICard from '../components/KPICard';
 import Modal from '../components/Modal';
 import { exportToPDF } from '../services/importExport';
+import { useFirestoreCollection } from '../hooks/useFirestore';
+import type { Plant } from '../types';
 
 interface BudgetItem {
   id: string;
@@ -17,6 +19,7 @@ interface Budget {
   id: string;
   name: string;
   project: string;
+  plantId: string;
   client: string;
   date: string;
   items: BudgetItem[];
@@ -35,13 +38,14 @@ const defaultItems: BudgetItem[] = [
 ];
 
 const Presupuestos: React.FC = () => {
+  const { data: plants } = useFirestoreCollection<Plant>('plants');
   const [budgets, setBudgets] = useState<Budget[]>([
-    { id: 'BGT-001', name: 'Presupuesto Skyline Towers', project: 'Skyline Towers', client: 'Constructora del Norte S.A.', date: '2026-04-01', items: [...defaultItems], taxRate: 21, contingencyRate: 5 },
-    { id: 'BGT-002', name: 'Presupuesto Puente Interurbano', project: 'Puente Interurbano', client: 'Gobierno Provincial', date: '2026-03-15', items: defaultItems.map(i => ({ ...i, quantity: i.quantity * 0.7, unitPrice: i.unitPrice * 1.1 })), taxRate: 21, contingencyRate: 8 },
+    { id: 'BGT-001', name: 'Presupuesto Skyline Towers', project: 'Skyline Towers', plantId: 'plant-north', client: 'Constructora del Norte S.A.', date: '2026-04-01', items: [...defaultItems], taxRate: 21, contingencyRate: 5 },
+    { id: 'BGT-002', name: 'Presupuesto Puente Interurbano', project: 'Puente Interurbano', plantId: 'plant-north', client: 'Gobierno Provincial', date: '2026-03-15', items: defaultItems.map(i => ({ ...i, quantity: i.quantity * 0.7, unitPrice: i.unitPrice * 1.1 })), taxRate: 21, contingencyRate: 8 },
   ]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', project: '', client: '', date: new Date().toISOString().slice(0, 10), items: [...defaultItems], taxRate: 21, contingencyRate: 5 });
+  const [form, setForm] = useState({ name: '', project: '', plantId: '', client: '', date: new Date().toISOString().slice(0, 10), items: [...defaultItems], taxRate: 21, contingencyRate: 5 });
 
   const calcSubtotal = (items: BudgetItem[]) => items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const calcTotal = (b: { items: BudgetItem[]; taxRate: number; contingencyRate: number }) => {
@@ -50,13 +54,13 @@ const Presupuestos: React.FC = () => {
   };
 
   const openCreate = () => {
-    setForm({ name: '', project: '', client: '', date: new Date().toISOString().slice(0, 10), items: [...defaultItems], taxRate: 21, contingencyRate: 5 });
+    setForm({ name: '', project: '', plantId: '', client: '', date: new Date().toISOString().slice(0, 10), items: [...defaultItems], taxRate: 21, contingencyRate: 5 });
     setEditingId(null);
     setModalOpen(true);
   };
 
   const openEdit = (b: Budget) => {
-    setForm({ name: b.name, project: b.project, client: b.client, date: b.date, items: b.items, taxRate: b.taxRate, contingencyRate: b.contingencyRate });
+    setForm({ name: b.name, project: b.project, plantId: b.plantId, client: b.client, date: b.date, items: b.items, taxRate: b.taxRate, contingencyRate: b.contingencyRate });
     setEditingId(b.id);
     setModalOpen(true);
   };
@@ -125,7 +129,7 @@ const Presupuestos: React.FC = () => {
                       <h4 className="font-bold">{b.name}</h4>
                       <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">{b.id}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{b.client} — {b.project}</p>
+                    <p className="text-sm text-muted-foreground">{b.client} — {b.project} {b.plantId && plants ? `(${plants.find(p => p.id === b.plantId)?.name ?? b.plantId})` : ''}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
@@ -168,6 +172,13 @@ const Presupuestos: React.FC = () => {
               <input type="text" value={form.client} onChange={e => setForm(f => ({ ...f, client: e.target.value }))} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
+              <label className="text-sm font-medium block mb-1">Planta</label>
+              <select value={form.plantId} onChange={e => setForm(f => ({ ...f, plantId: e.target.value }))} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+                <option value="">Seleccionar planta...</option>
+                {plants?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
               <label className="text-sm font-medium block mb-1">Fecha</label>
               <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             </div>
@@ -175,6 +186,13 @@ const Presupuestos: React.FC = () => {
 
           <div className="border-t border-border pt-4">
             <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Calculator className="w-4 h-4" /> Partidas del Presupuesto</h4>
+            <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium mb-2 px-1">
+              <span className="col-span-3">Categoría</span>
+              <span className="col-span-3">Descripción</span>
+              <span className="col-span-1 text-center">Cant.</span>
+              <span className="col-span-2 text-right">P. Unitario</span>
+              <span className="col-span-3 text-right">Total</span>
+            </div>
             <div className="space-y-2">
               {form.items.map((item, idx) => (
                 <div key={item.id} className="grid grid-cols-12 gap-2 items-center text-xs">
