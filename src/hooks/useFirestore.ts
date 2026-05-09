@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
-export const useFirestoreCollection = <T>(collectionName: string) => {
+export const useFirestoreCollection = <T>(collectionName: string, refetchIntervalMs?: number) => {
   return useQuery({
     queryKey: [collectionName],
     queryFn: async () => {
@@ -10,6 +10,8 @@ export const useFirestoreCollection = <T>(collectionName: string) => {
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as T[];
     },
     staleTime: 1000 * 60 * 5,
+    refetchInterval: refetchIntervalMs ?? 30_000,
+    refetchIntervalInBackground: true,
   });
 };
 

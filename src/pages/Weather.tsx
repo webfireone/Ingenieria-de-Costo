@@ -1,7 +1,21 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { CloudRain, Calendar, TrendingDown, Umbrella, Sun, Cloud, CloudSun, ThermometerSun, Wind, Droplets, RefreshCw } from 'lucide-react';
+import { CloudRain, Calendar, TrendingDown, Umbrella, Sun, Cloud, CloudSun, ThermometerSun, Wind, Droplets, RefreshCw, Database } from 'lucide-react';
 import KPICard from '../components/KPICard';
+import { useFirestoreCollection, useCreateDocument } from '../hooks/useFirestore';
+
+interface WeatherLog {
+  id: string;
+  date: string;
+  month: number;
+  year: number;
+  rain: boolean;
+  temp: number;
+  tempDesc: string;
+  description: string;
+  humidity: number;
+  wind: number | null;
+}
 
 interface WeatherData {
   temp: number;
@@ -71,12 +85,15 @@ const formatDate = (d: Date) => `${d.getDate()} ${monthNames[d.getMonth()]}`;
 const formatDateShort = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
 
 const Weather: React.FC = () => {
+  const { data: weatherLog } = useFirestoreCollection<WeatherLog>('weather_log', 60_000);
+  const createLog = useCreateDocument('weather_log');
   const [current, setCurrent] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<DayForecast[]>([]);
   const [events, setEvents] = useState<WeatherEvent[]>([]);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [logging, setLogging] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -175,12 +192,32 @@ const Weather: React.FC = () => {
         }
       }
       setEvents(rainEvents);
+
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const alreadyLogged = weatherLog?.some(l => l.date === todayStr);
+      if (!alreadyLogged && !logging) {
+        setLogging(true);
+        const w = station.weather;
+        createLog.mutate({
+          date: todayStr,
+          month: today.getMonth(),
+          year: today.getFullYear(),
+          rain: conditionIsRain(w.id),
+          temp: Math.round(w.temp),
+          tempDesc: w.tempDesc,
+          description: w.description,
+          humidity: w.humidity,
+          wind: w.wind_speed,
+        }, {
+          onSettled: () => setLogging(false),
+        });
+      }
     } catch {
       setError('Error al conectar con el SMN');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [weatherLog, createLog, logging]);
 
   function generateFallbackDay(d: Date, offset: number): DayForecast {
     const baseTemp = offset > 3 ? 20 - (offset - 3) * 1.5 : 20;
@@ -198,38 +235,83 @@ const Weather: React.FC = () => {
   }, [fetchData]);
 
   const monthlyRainData = useMemo(() => {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const now = new Date();
     const currentMonth = now.getMonth();
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const defaultRain = [4, 0, 2, 5, 3, 1, 0, 0, 2, 4, 3, 2];
 
-    const adjusted = months.map((_, i) => {
-      if (i < currentMonth) return defaultRain[i];
-      if (i === currentMonth) {
-        const rainDays = forecast.filter(f => f.isRain).length;
-        return Math.round(rainDays * (30 / Math.max(7, forecast.length)));
-      }
-      return defaultRain[i];
+    const recorded: number[] = months.map((_, i) => {
+      if (!weatherLog) return 0;
+      const entries = weatherLog.filter(l => l.month === i && l.year === now.getFullYear());
+      if (i >= currentMonth) return 0;
+      return entries.filter(e => e.rain).length;
     });
-    return { months, rainDays: adjusted };
-  }, [forecast]);
 
-  const totalRainDays = monthlyRainData.rainDays.reduce((a, b) => a + b, 0);
+    const thisMonthRecorded = weatherLog
+      ? weatherLog.filter(l => l.month === currentMonth && l.year === now.getFullYear() && l.rain).length
+      : 0;
+    const thisMonthDaysSoFar = weatherLog
+      ? weatherLog.filter(l => l.month === currentMonth && l.year === now.getFullYear()).length
+      : 0;
+    const forecastRainDays = forecast.filter(f => f.isRain).length;
+    const totalDaysInMonth = new Date(now.getFullYear(), currentMonth + 1, 0).getDate();
+    const remainingDays = totalDaysInMonth - now.getDate();
+    const projectedRainThisMonth = remainingDays > 0 && forecast.length > 0
+      ? Math.round((forecastRainDays / forecast.length) * remainingDays)
+      : 0;
+    const thisMonthTotal = thisMonthRecorded + projectedRainThisMonth;
+
+    recorded[currentMonth] = thisMonthTotal;
+
+    return {
+      months,
+      recorded: recorded,
+      isProjected: months.map((_, i) => i >= currentMonth),
+      futureRain: months.map((_, i) => {
+        if (i > currentMonth) return Math.round(forecastRainDays / Math.max(forecast.length, 1) * 30);
+        return 0;
+      }),
+    };
+  }, [weatherLog, forecast]);
+
+  const totalRainDays = monthlyRainData.recorded.reduce((a, b) => a + b, 0) + monthlyRainData.futureRain.reduce((a, b) => a + b, 0);
   const totalImpact = totalRainDays * IMPACT_PER_RAIN_DAY;
 
   const chartOption = {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis' as const },
+    legend: { data: ['Registrado', 'Proyectado', 'Impacto producción'], textStyle: { color: '#94a3b8' }, bottom: 0 },
     xAxis: { type: 'category' as const, data: monthlyRainData.months, axisLabel: { color: '#94a3b8' } },
     yAxis: [
       { type: 'value' as const, name: 'Días de lluvia', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#1e293b' } } },
       { type: 'value' as const, name: 'm³ no producidos', axisLabel: { color: '#94a3b8' }, splitLine: { show: false } },
     ],
     series: [
-      { name: 'Días de lluvia', type: 'bar' as const, data: monthlyRainData.rainDays, itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] }, yAxisIndex: 0 },
-      { name: 'Impacto producción', type: 'line' as const, data: monthlyRainData.rainDays.map(d => d * IMPACT_PER_RAIN_DAY), smooth: true, lineStyle: { color: '#ef4444', width: 3 }, symbol: 'circle', yAxisIndex: 1, areaStyle: { opacity: 0.1, color: '#ef4444' } },
+      {
+        name: 'Registrado',
+        type: 'bar' as const,
+        data: monthlyRainData.recorded,
+        itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
+        yAxisIndex: 0,
+      },
+      {
+        name: 'Proyectado',
+        type: 'bar' as const,
+        data: monthlyRainData.recorded.map((v, i) => monthlyRainData.isProjected[i] ? v : 0),
+        itemStyle: { color: '#3b82f6', opacity: 0.3, borderRadius: [4, 4, 0, 0] },
+        yAxisIndex: 0,
+      },
+      {
+        name: 'Impacto producción',
+        type: 'line' as const,
+        data: monthlyRainData.recorded.map(d => d * IMPACT_PER_RAIN_DAY),
+        smooth: true,
+        lineStyle: { color: '#ef4444', width: 3 },
+        symbol: 'circle',
+        yAxisIndex: 1,
+        areaStyle: { opacity: 0.1, color: '#ef4444' },
+      },
     ],
-    grid: { left: '10%', right: '10%', bottom: '10%', containLabel: true },
+    grid: { left: '10%', right: '10%', bottom: '15%', containLabel: true },
   };
 
   const rainDays7 = forecast.filter(f => f.isRain).length;
@@ -366,6 +448,14 @@ const Weather: React.FC = () => {
         <div className="glass-card p-6 rounded-xl">
           <h3 className="font-bold text-lg mb-4">Días de Lluvia por Mes</h3>
           <div className="h-[300px]"><ReactECharts option={chartOption} style={{ height: '100%' }} /></div>
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            <span className="inline-block w-3 h-3 bg-blue-500 rounded-sm mr-1 align-middle" />
+            Registrado
+            <span className="inline-block w-3 h-3 bg-blue-500/30 rounded-sm ml-3 mr-1 align-middle" />
+            Proyectado
+            <Database className="w-3 h-3 inline ml-3 mr-1 align-middle text-muted-foreground" />
+            {weatherLog?.length ?? 0} registros en Firebase
+          </p>
         </div>
         <div className="glass-card p-6 rounded-xl">
           <h3 className="font-bold text-lg mb-4">Resumen Semanal</h3>
@@ -403,6 +493,7 @@ const Weather: React.FC = () => {
             <div className="p-3 bg-card border border-border rounded-lg">
               <p className="text-xs text-muted-foreground">
                 Los datos provienen del <strong>Servicio Meteorológico Nacional</strong> (SMN) y se actualizan automáticamente cada 30 minutos.
+                Las observaciones diarias se registran en <strong>Firebase</strong> para acumular histórico mes a mes.
                 El pronóstico a 7 días combina datos del SMN (días 1-4) con estimaciones históricas (días 5-7).
               </p>
             </div>
