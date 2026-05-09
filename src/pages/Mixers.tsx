@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Truck, Clock, AlertTriangle, MapPin, Gauge, Droplets, Plus, Pen, Trash2 } from 'lucide-react';
 import KPICard from '../components/KPICard';
 import Modal from '../components/Modal';
-import { useFirestoreCollection } from '../hooks/useFirestore';
+import { useFirestoreCollection, useCreateDocument, useUpdateDocument, useDeleteDocument } from '../hooks/useFirestore';
 import type { Plant } from '../types';
 
 interface Mixer {
@@ -16,32 +16,35 @@ interface Mixer {
   cycleTime: number;
   tripsToday: number;
   lostConcrete: number;
+  ultimaActualizacion: string;
 }
-
-const defaultMixers: Mixer[] = [
-  { id: 'M-001', plate: 'ABC-123', driver: 'Carlos López', plantId: 'plant-north', status: 'en_ruta', location: 'Ruta 34 - Km 12', capacity: 8, cycleTime: 95, tripsToday: 3, lostConcrete: 0.2 },
-  { id: 'M-002', plate: 'DEF-456', driver: 'Juan Pérez', plantId: 'plant-north', status: 'descargando', location: 'Obra Skyline Towers', capacity: 8, cycleTime: 110, tripsToday: 4, lostConcrete: 0.5 },
-  { id: 'M-003', plate: 'GHI-789', driver: 'Pedro Gómez', plantId: 'plant-north', status: 'en_obra', location: 'Puente Interurbano', capacity: 7, cycleTime: 85, tripsToday: 5, lostConcrete: 0 },
-  { id: 'M-004', plate: 'JKL-012', driver: 'Luis Martínez', plantId: 'plant-south', status: 'disponible', location: 'Planta Sur', capacity: 8, cycleTime: 0, tripsToday: 2, lostConcrete: 0 },
-  { id: 'M-005', plate: 'MNO-345', driver: 'Carlos Ruiz', plantId: 'plant-north', status: 'mantenimiento', location: 'Taller Central', capacity: 8, cycleTime: 0, tripsToday: 0, lostConcrete: 0 },
-  { id: 'M-006', plate: 'PQR-678', driver: 'José Fernández', plantId: 'plant-south', status: 'en_ruta', location: 'Ruta 9 - Km 5', capacity: 7, cycleTime: 90, tripsToday: 3, lostConcrete: 0.3 },
-];
 
 const statusLabel = { disponible: 'Disponible', en_ruta: 'En Ruta', en_obra: 'En Obra', descargando: 'Descargando', mantenimiento: 'Mantenimiento' };
 const statusColor = { disponible: 'bg-green-500/10 text-green-500 border-green-500/20', en_ruta: 'bg-blue-500/10 text-blue-500 border-blue-500/20', en_obra: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', descargando: 'bg-purple-500/10 text-purple-500 border-purple-500/20', mantenimiento: 'bg-red-500/10 text-red-500 border-red-500/20' };
 
 const emptyForm = { plate: '', driver: '', plantId: '', location: '', capacity: 8, cycleTime: 0, tripsToday: 0, lostConcrete: 0, status: 'disponible' as Mixer['status'] };
 
+const now = () => new Date().toLocaleString('es-AR', {
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', hour12: false,
+});
+
 const Mixers: React.FC = () => {
   const { data: plants } = useFirestoreCollection<Plant>('plants');
-  const [mixers, setMixers] = useState<Mixer[]>(defaultMixers);
+  const { data: mixers } = useFirestoreCollection<Mixer>('mixers');
+  const createMixer = useCreateDocument('mixers');
+  const updateMixer = useUpdateDocument('mixers');
+  const deleteMixer = useDeleteDocument('mixers');
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  const active = mixers.filter(m => m.status !== 'disponible' && m.status !== 'mantenimiento').length;
-  const totalLost = mixers.reduce((s, m) => s + m.lostConcrete, 0);
-  const totalTrips = mixers.reduce((s, m) => s + m.tripsToday, 0);
+  const list = mixers ?? [];
+
+  const active = list.filter(m => m.status !== 'disponible' && m.status !== 'mantenimiento').length;
+  const totalLost = list.reduce((s, m) => s + m.lostConcrete, 0);
+  const totalTrips = list.reduce((s, m) => s + m.tripsToday, 0);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -55,35 +58,38 @@ const Mixers: React.FC = () => {
     setModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.plate || !form.plantId) return;
+    const ts = now();
     if (editingId) {
-      setMixers(prev => prev.map(m => m.id === editingId ? { ...m, ...form } : m));
+      await updateMixer.mutateAsync({ id: editingId, data: { ...form, ultimaActualizacion: ts } });
     } else {
-      const nextId = `M-${String(mixers.length + 1).padStart(3, '0')}`;
-      setMixers(prev => [...prev, { id: nextId, ...form }]);
+      await createMixer.mutateAsync({ ...form, ultimaActualizacion: ts });
     }
     setModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('¿Eliminar este mixer?')) setMixers(prev => prev.filter(m => m.id !== id));
+  const handleDelete = async (id: string) => {
+    if (confirm('¿Eliminar este mixer?')) {
+      await deleteMixer.mutateAsync(id);
+    }
   };
 
   const plantName = (id: string) => plants?.find(p => p.id === id)?.name ?? id;
+  const isSaving = createMixer.isPending || updateMixer.isPending;
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <KPICard title="Total Camiones" value={mixers.length} icon={Truck} />
-        <KPICard title="En Operación" value={active} icon={Clock} trend={{ value: Math.round(active / mixers.length * 100), isUp: true }} description="% en uso" />
+        <KPICard title="Total Camiones" value={list.length} icon={Truck} />
+        <KPICard title="En Operación" value={active} icon={Clock} trend={list.length > 0 ? { value: Math.round(active / list.length * 100), isUp: true } : undefined} description="% en uso" />
         <KPICard title="Viajes Hoy" value={totalTrips} icon={MapPin} />
         <KPICard title="Hormigón Perdido" value={`${totalLost.toFixed(1)} m³`} icon={Droplets} trend={{ value: 8, isUp: false }} description="Por rechazo/demora" />
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
         {plants?.map(p => {
-          const count = mixers.filter(m => m.plantId === p.id).length;
+          const count = list.filter(m => m.plantId === p.id).length;
           if (count === 0) return null;
           return (
             <div key={p.id} className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm">
@@ -107,7 +113,6 @@ const Mixers: React.FC = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-muted-foreground">
-                <th className="text-left py-3 px-4">Unidad</th>
                 <th className="text-left py-3 px-4">Patente</th>
                 <th className="text-left py-3 px-4">Conductor</th>
                 <th className="text-left py-3 px-4">Planta</th>
@@ -117,14 +122,14 @@ const Mixers: React.FC = () => {
                 <th className="text-center py-3 px-4">Ciclo (min)</th>
                 <th className="text-center py-3 px-4">Viajes Hoy</th>
                 <th className="text-right py-3 px-4">Perdido (m³)</th>
+                <th className="text-right py-3 px-4">Ult. Actualización</th>
                 <th className="text-center py-3 px-4">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {mixers.map((m) => (
+              {list.map((m) => (
                 <tr key={m.id} className="border-b border-border/50 hover:bg-primary/5 transition-colors">
-                  <td className="py-3 px-4 font-medium">{m.id}</td>
-                  <td className="py-3 px-4 font-mono text-xs">{m.plate}</td>
+                  <td className="py-3 px-4 font-mono text-xs font-medium">{m.plate}</td>
                   <td className="py-3 px-4">{m.driver}</td>
                   <td className="py-3 px-4 text-muted-foreground text-xs">{plantName(m.plantId)}</td>
                   <td className="py-3 px-4 text-center">
@@ -140,6 +145,7 @@ const Mixers: React.FC = () => {
                   <td className="py-3 px-4 text-right">
                     <span className={m.lostConcrete > 0 ? 'text-red-500 font-medium' : 'text-muted-foreground'}>{m.lostConcrete > 0 ? `${m.lostConcrete} m³` : '---'}</span>
                   </td>
+                  <td className="py-3 px-4 text-right text-xs text-muted-foreground">{m.ultimaActualizacion}</td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button onClick={() => openEdit(m)} className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors" title="Editar"><Pen className="w-3.5 h-3.5" /></button>
@@ -148,6 +154,9 @@ const Mixers: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {list.length === 0 && (
+                <tr><td colSpan={11} className="text-center py-8 text-muted-foreground">No hay mixers registrados. Presione "Agregar Mixer" para crear uno.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -204,8 +213,8 @@ const Mixers: React.FC = () => {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <button onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
-            <button onClick={handleSave} disabled={!form.plate || !form.plantId} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:scale-105 transition-all disabled:opacity-50">
-              {editingId ? 'Actualizar' : 'Agregar'}
+            <button onClick={handleSave} disabled={isSaving || !form.plate || !form.plantId} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:scale-105 transition-all disabled:opacity-50">
+              {isSaving ? 'Guardando...' : editingId ? 'Actualizar' : 'Agregar'}
             </button>
           </div>
         </div>
