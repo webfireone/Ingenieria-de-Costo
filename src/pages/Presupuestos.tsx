@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Pen, Trash2, Calculator, DollarSign, Percent, Truck, HardHat, Receipt } from 'lucide-react';
+import { FileText, Plus, Pen, Trash2, Calculator, DollarSign, Percent, Truck, HardHat, Receipt, Download } from 'lucide-react';
 import KPICard from '../components/KPICard';
 import Modal from '../components/Modal';
+import { exportToPDF } from '../services/importExport';
 
 interface BudgetItem {
   id: string;
@@ -80,6 +81,22 @@ const Presupuestos: React.FC = () => {
 
   const totalPresupuestado = budgets.reduce((s, b) => s + calcTotal(b), 0);
 
+  const handleExportPDF = (b: Budget) => {
+    const sub = calcSubtotal(b.items);
+    const total = calcTotal(b);
+    const headers = [['Partida', 'Descripción', 'Cant.', 'P. Unit.', 'Total']];
+    const rows = b.items.map(i => [
+      i.category, i.description, `${i.quantity} ${i.unit}`,
+      `$${i.unitPrice.toFixed(2)}`, `$${(i.quantity * i.unitPrice).toFixed(2)}`
+    ]);
+    rows.push(['', '', '', '', '']);
+    rows.push(['', '', 'SUBTOTAL', '', `$${sub.toFixed(2)}`]);
+    rows.push(['', '', `IVA (${b.taxRate}%)`, '', `$${(sub * b.taxRate / 100).toFixed(2)}`]);
+    rows.push(['', '', `Imprevistos (${b.contingencyRate}%)`, '', `$${(sub * b.contingencyRate / 100).toFixed(2)}`]);
+    rows.push(['', '', 'TOTAL', '', `$${total.toFixed(2)}`]);
+    exportToPDF(`${b.name} - ${b.client}`, headers, rows, b.id);
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -115,6 +132,7 @@ const Presupuestos: React.FC = () => {
                       <p className="text-sm text-muted-foreground">Total</p>
                       <p className="text-lg font-bold text-primary">${total.toLocaleString()}</p>
                     </div>
+                    <button onClick={() => handleExportPDF(b)} className="p-2 rounded-lg hover:bg-primary/10 transition-colors" title="Descargar PDF"><Download className="w-4 h-4" /></button>
                     <button onClick={() => openEdit(b)} className="p-2 rounded-lg hover:bg-primary/10 transition-colors"><Pen className="w-4 h-4" /></button>
                     <button onClick={() => handleDelete(b.id)} className="p-2 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>

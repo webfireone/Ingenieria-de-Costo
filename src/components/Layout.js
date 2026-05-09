@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { LayoutDashboard, Factory, Briefcase, ClipboardCheck, BarChart3, ShieldAlert, FileOutput, Settings, Receipt, Bell } from 'lucide-react';
+import { LayoutDashboard, Factory, Briefcase, ClipboardCheck, BarChart3, ShieldAlert, FileOutput, Settings, Receipt, Bell, Truck, CloudRain, BarChart4 } from 'lucide-react';
 const pageMeta = {
     dashboard: { title: 'Panel Operativo', description: 'Monitoreo de costos y rentabilidad en tiempo real' },
     plants: { title: 'Gestión de Plantas', description: 'Administración de plantas de hormigón y parámetros operativos' },
@@ -7,6 +7,9 @@ const pageMeta = {
     presupuestos: { title: 'Presupuestos y Cotizaciones', description: 'Armado de presupuestos con materiales, MO, equipos e impuestos' },
     quality: { title: 'Control de Calidad', description: 'Resistencia, slump, muestras y rechazos de hormigón' },
     alerts: { title: 'Alertas y Umbrales', description: 'Configuración de umbrales y monitoreo de alertas del sistema' },
+    mixers: { title: 'Flota de Mixers', description: 'Seguimiento de camiones, tiempos de ciclo y hormigón perdido' },
+    weather: { title: 'Clima y Lluvias', description: 'Registro de días de lluvia e impacto en la producción' },
+    comparativa: { title: 'Comparativa de Plantas', description: 'Tabla comparativa de indicadores entre plantas' },
     projections: { title: 'Proyecciones Financieras', description: 'Flujo de caja, punto de equilibrio y escenarios' },
     risks: { title: 'Análisis de Riesgos', description: 'Simulación Monte Carlo y análisis de sensibilidad' },
     reports: { title: 'Reportes y Exportación', description: 'Importación y exportación de datos (CSV, Excel, PDF)' },
@@ -19,13 +22,16 @@ const navItems = [
     { icon: Receipt, label: 'Presupuestos', page: 'presupuestos' },
     { icon: ClipboardCheck, label: 'Calidad', page: 'quality' },
     { icon: Bell, label: 'Alertas', page: 'alerts' },
+    { icon: Truck, label: 'Mixers', page: 'mixers' },
+    { icon: CloudRain, label: 'Clima', page: 'weather' },
+    { icon: BarChart4, label: 'Comparativa', page: 'comparativa' },
     { icon: BarChart3, label: 'Proyecciones', page: 'projections' },
     { icon: ShieldAlert, label: 'Riesgos', page: 'risks' },
     { icon: FileOutput, label: 'Reportes', page: 'reports' },
 ];
 const Layout = ({ children, currentPage, onNavigate }) => {
     const meta = pageMeta[currentPage] ?? pageMeta.dashboard;
-    return (_jsxs("div", { className: "flex h-screen bg-background text-foreground overflow-hidden", children: [_jsxs("aside", { className: "w-64 border-r border-border bg-card/30 backdrop-blur-xl flex flex-col", children: [_jsx("div", { className: "p-6", children: _jsx("h1", { className: "text-xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent", children: "ConcreteEng PRO" }) }), _jsx("nav", { className: "flex-1 px-4 space-y-2", children: navItems.map((item) => {
+    return (_jsxs("div", { className: "flex h-screen bg-background text-foreground overflow-hidden", children: [_jsxs("aside", { className: "w-64 border-r border-border bg-card/30 backdrop-blur-xl flex flex-col", children: [_jsx("div", { className: "p-6", children: _jsx("h1", { className: "text-xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent", children: "GRUPO FALPAT" }) }), _jsx("nav", { className: "flex-1 px-4 space-y-2", children: navItems.map((item) => {
                             const isActive = currentPage === item.page;
                             return (_jsxs("button", { onClick: () => onNavigate(item.page), className: `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
                                     ? 'bg-primary/15 text-primary'
