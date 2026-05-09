@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: concrete-cost-eng
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: dist
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: VITE_FIREBASE_API_KEY
+        fromConfig: VITE_FIREBASE_API_KEY
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        fromConfig: VITE_FIREBASE_AUTH_DOMAIN
+      - key: VITE_FIREBASE_PROJECT_ID
+        fromConfig: VITE_FIREBASE_PROJECT_ID
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        fromConfig: VITE_FIREBASE_STORAGE_BUCKET
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        fromConfig: VITE_FIREBASE_MESSAGING_SENDER_ID
+      - key: VITE_FIREBASE_APP_ID
+        fromConfig: VITE_FIREBASE_APP_ID
