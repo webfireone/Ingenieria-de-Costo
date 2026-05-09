@@ -1,0 +1,182 @@
+1 - para varias plantas, la usarán principalmente? administrador, ingeniero de planta, jefe de obras
+2 - utilizar todas, si encontras alguna mas agregar.
+3 - utilizar todas, si encontras alguna mas agregar.
+4 - Mensual, trimestral,y anual. escenarios (base / optimista / pesimista) y simulación Monte Carlo ligera.
+Necesito proyección de flujo de caja y punto de equilibrio
+5 - utilizar todas, si encontras alguna mas agregar.
+6 - ambos escenarios, craga manual con la capacidad de cargar importar/exportar datos (CSV, Excel, PDF de presupuestos.
+7 . Qué las visualizaciones puedan ser de Gráficos de líneas/temporales, heatmaps, tablas pivot, gauges, comparativas proyecto vs. planta etc, con la posibilidad de elegir cualquier ellas.
+8 - Render (Free), voy a utilizar uptimerobot para que la page este constantemente arriba. Firebase entiendo que me alcabzaria de lo contrario lo colocaría de manera paga.
+9 - por ahora no vamos a utilizar la Seguridad y Permisos.
+10 - en antigravity colocare el prompt que me pases, utilizando lo antes mencionado, GitHub, render y firebase.
+11 - agregar todas, si encontras alguna mas agregar.
+
+------------------------------
+
+1. Alcance y roles
+único usuario , sin autenticación al principio?
+
+2. Funcionalidades concretas de la app (elegí las prioritarias)
+Planificación de obra: cronograma, hitos, duración estimada, dependencias, todo esto y si se te ocurre algo mas para que sea mas completa agregar.
+si a todo esto:
+Cotización de presupuestos: materiales, mano de obra, equipos, impuestos.
+Cálculo de beneficio respecto a planta hormigonera (costo m³, transporte, bombeo, margen).
+Gastos desglosados por categoría (hormigón, acero, encofrado, mano obra, maquinaria, dirección técnica, imprevistos).
+Rendimiento futuro: proyección de ingresos vs gastos mes a mes.
+Dashboard con ratios (ROI, margen neto, costo por m³, rentabilidad esperada).
+Evolución temporal (gráficos línea/barra).
+Búsqueda web automática de precios de insumos? (esto requiere API externa o scraping, lo cual tiene límites en gratuito)
+
+3. Planta hormigonera – parámetros dinámicos
+es propia y si a todo esto:
+¿Querés modelar:
+Producción máxima diaria (m³)
+Costo fijo diario (operación)
+Costo variable por m³ (cemento, áridos, aditivos)
+Precio de venta del m³ al cliente
+Distancia de transporte (costo por km/m³)
+Tiempo de descarga
+
+4. Datos que ya tenés o querés ingresar manualmente
+¿Vas a cargar datos manualmente (formularios) o querés que la app tenga datos de ejemplo precargados?
+quiero ambos escenarios.
+¿Necesitás importar/exportar Excel o CSV? SI
+
+5. Base de datos (Firebase)
+¿Aceptás usar Firebase Firestore (gratuito hasta 1 GB almacenamiento, 50k lecturas/día)? SI
+
+¿Querés guardar: SI A TODO
+Obras
+Cotizaciones
+Costos históricos
+Parámetros de la planta
+
+6. Tecnologías deseadas
+Aunque puedas pedir en Antigravity, decime tu preferencia:
+
+Frontend: React, Vue, o Svelte? EL MAS CONVENIENTE
+Gráficos: Chart.js, Recharts, ECharts? EL MAS CONVENIENTE
+Backend: ¿Todo en frontend + Firebase (sin backend propio) o Node.js + Express? EVALUAR CUAL ES LA MEJOR OPCION E IMPLEMENTAR.
+
+7. Entorno gratuito – confirmación
+GitHub: sí (repositorio público) SI
+
+Render: plan gratis (web service se duerme después de inactividad, tarda 30-50s en despertar)SI, SE UTILIZARA uptimerobot PARA QUE LA PAGE NO SE CAIGA
+Firebase: plan Spark (gratis, sin factura) SI
+¿Estás de acuerdo con que la app tenga un delay de inicio en Render? NO
+
+8. Lo que NO debe faltar (detalles críticos del rubro)
+Dame 3 o 4 puntos de tu experiencia real que suelen olvidarse en otras apps.
+Ejemplos posibles:
+
+Rendimiento de camiones mixer (tiempo ciclo, espera en obra)
+Hormigón perdido por rechazo o demora
+Días de lluvia que paralizan obra
+Costo de limpieza de equipos
+TODOS, ASI QUE TENERLOS PRESENTES
+
+
+9. Dashboard – ratios específicos
+¿Cuáles querés sí o sí? QUIERO A TODOS
+
+ROI (retorno inversión)
+Payback (meses)
+Costo real por m³ colocado
+Margen Neto por obra
+Índice de productividad (m³/hombre/día)
+Evolución vs planificado (curva S)
+
+10. Búsqueda en la web
+¿Qué esperás que busque automáticamente?
+TODOS LOS PUNTOS DE MAS ABAJO
+Precios de cemento, arena, piedra
+Alquiler de bombas
+Mano de obra por zona
+(Esto es complejo y caro en API gratuitas → recomiendo mejor entrada manual o precios de referencia fijos actualizables por el usuario)
+OK A ESTE PUNTO
+
+
+
+
+------------------------------------
+
+# ROL
+Actúa como Arquitecto de Software Senior + Especialista en Ingeniería de Costos para Plantas de Hormigón + Desarrollador Full-Stack. Tu tarea es generar una aplicación web completa, modular y lista para producción, optimizada estrictamente para tiers gratuitos (Render + Firebase Spark).
+
+# STACK TÉCNICO OBLIGATORIO
+- Frontend: Vite + React 18 + TypeScript + TailwindCSS + shadcn/ui
+- Estado/Datos: React Query + Firebase SDK (Firestore v9 modular)
+- Visualización: Apache ECharts (soporta heatmaps, gauges, pivotes, líneas temporales) + TanStack Table
+- Import/Export: PapaParse (CSV), SheetJS (Excel), PDF-lib / pdfmake (PDF)
+- Simulación: Web Worker para Monte Carlo ligero (client-side) + Sensibilidad Tornado
+- Despliegue: SPA estático en Render (con UptimeRobot) + Firebase Firestore (Spark)
+
+# REQUERIMIENTOS FUNCIONALES
+1. Multi-planta: Soporte para N plantas de hormigón, cada una con equipos, inventarios, costos operativos y proyectos asignados.
+2. Usuarios (sin auth por ahora, pero estructura preparada): Administrador, Ingeniero de Planta, Jefe de Obra.
+3. Dashboard Dinámico: Paneles arrastrables, selector de visualización (líneas, barras, heatmaps, gauges, tablas pivot, comparativas planta vs proyecto).
+4. Parámetros Dinámicos (editables en tiempo real, recálculo automático):
+   - Insumos: Cemento, áridos, aditivos, agua, acero, combustible, energía.
+   - Costos: Salarios, horas extras, subcontratos, fletes, peajes, mantenimiento preventivo/correctivo.
+   - Financieros: Tasa descuento, inflación, impuestos, tipo de cambio (si aplica).
+   - Operativos: Capacidad instalada, disponibilidad, rendimiento teórico vs real, merma %, factores climáticos/curado.
+5. KPIs Obligatorios (agregar si encuentras más relevantes):
+   - Costo/m³ (desglosado material/MO/energía/mantenimiento)
+   - Margen bruto/neto por proyecto y planta
+   - ROI, VAN (NPV), TIR (IRR), Payback dinámico, Punto de equilibrio
+   - OEE planta, MTBF/MTTR, % desperdicio, Índice de cumplimiento cronograma
+   - Costo de no calidad, Días de inventario, Cash Conversion Cycle
+6. Modelado Temporal: Proyecciones Mensual/Trimestral/Anual. Escenarios: Base, Optimista, Pesimista. Simulación Monte Carlo ligera (1.000-3.000 iteraciones, distribución triangular/normal para variables clave).
+7. Puntos Críticos & Alertas: Detección automática de cuellos de botella, variación de precios, paradas no programadas, retrasos, morosidad, control de calidad (slump, resistencia), cumplimiento normativo. Alertas configurables por umbral.
+8. Import/Export: Carga manual, CSV, Excel, PDF de presupuestos. Exportación de reportes ejecutivos.
+9. Optimización Free Tier:
+   - Máximo 50k lecturas/día Firestore. Usar paginación, índices compuestos, agregados precalculados, caché React Query (staleTime: 300000).
+   - Sin listeners en tiempo real en colecciones grandes. Usar fetch bajo demanda.
+   - Monte Carlo ejecutado en Web Worker (client-side). Sin carga de servidor.
+   - Render Free: SPA estático. UptimeRobot ping /health cada 3min.
+
+# ESTRUCTURA DE ARCHIVOS (GENERAR EXACTAMENTE ESTA)
+/src
+  /components   (UI reutilizable: DataTable, ChartSelector, KPIGauge, ScenarioToggler, MonteCarloPanel)
+  /pages        (Dashboard, Plants, Projects, Budgets, Projections, Quality, Risks, ImportExport)
+  /hooks        (useFirestore, useMonteCarlo, useProjections, useAlerts)
+  /services     (firebase.ts, calculations.ts, importExport.ts, formulas.ts)
+  /workers      (monteCarlo.worker.ts)
+  /types        (index.ts)
+  /utils        (constants.ts, helpers.ts, validation.ts)
+/public         (logo, favicons)
+/index.html
+/vite.config.ts
+/package.json
+/tsconfig.json
+/tailwind.config.js
+/firebase.rules
+/render.yaml
+/README.md
+
+# LÓGICA DE NEGOCIO & FÓRMULAS (IMPLEMENTAR EN /services/formulas.ts)
+- VAN (NPV): Σ [CFt / (1+r)^t] - Inversión Inicial
+- TIR (IRR): r tal que VAN = 0 (método Newton-Raphson o bisección)
+- Payback: Período donde CF acumulado ≥ 0
+- Punto de Equilibrio (m³): Costos Fijos / (Precio Venta/m³ - Costo Variable/m³)
+- OEE: Disponibilidad × Rendimiento × Calidad
+- Monte Carlo: Iteraciones con variables aleatorias (precios, rendimiento, clima). Calcular distribución de VAN, Payback, Margen. Guardar percentiles 5%, 50%, 95%.
+- Sensibilidad: Variar ±15% cada parámetro, medir impacto en VAN/Margen (Gráfico Tornado).
+
+# ENTREGABLES GENERADOS POR LA IA
+1. Código completo listo para `npm install && npm run dev`
+2. Archivo `seed.ts` para poblar Firestore con datos demo realistas (3 plantas, 2 proyectos, 12 meses)
+3. `firebase.rules` restrictivas pero abiertas para desarrollo
+4. `render.yaml` + script de healthcheck para UptimeRobot
+5. Documentación de fórmulas y lógica en `/docs`
+6. Instrucciones paso a paso de despliegue GitHub → Render → Firebase
+
+# RESTRICCIONES CRÍTICAS
+- NO usar Next.js SSR (Render Free no soporta Node persistente bien). Usar Vite SPA.
+- NO usar Firebase Auth por ahora. Usar `localStorage` para simular perfil/rol si es necesario.
+- NO usar real-time listeners masivos.
+- TODA la simulación pesada debe ir en Web Workers.
+- Código modular, comentado, tipado estricto, listo para escalar a auth + multi-tenant en futuro.
+
+Genera el proyecto completo. Si el output excede límites, divídelo en partes lógicas (Frontend UI, Lógica/Worker, Firebase/Config, Deploy/Docs) y espera confirmación para continuar.
+---------------------------------------
