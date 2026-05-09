@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Plants from './pages/Plants';
 import Projects from './pages/Projects';
 import Projections from './pages/Projections';
+import Quality from './pages/Quality';
 import Risks from './pages/Risks';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/Settings';
@@ -36,6 +37,7 @@ function App() {
             case 'plants': return _jsx(Plants, {});
             case 'projects': return _jsx(Projects, {});
             case 'projections': return _jsx(Projections, {});
+            case 'quality': return _jsx(Quality, {});
             case 'risks': return _jsx(Risks, {});
             case 'reports': return _jsx(Reports, {});
             case 'settings': return _jsx(SettingsPage, {});

@@ -1,9 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { LayoutDashboard, Factory, Briefcase, BarChart3, ShieldAlert, FileOutput, Settings } from 'lucide-react';
+import { LayoutDashboard, Factory, Briefcase, BarChart3, ShieldAlert, FileOutput, Settings, ClipboardCheck } from 'lucide-react';
 const pageMeta = {
     dashboard: { title: 'Panel Operativo', description: 'Monitoreo de costos y rentabilidad en tiempo real' },
     plants: { title: 'Gestión de Plantas', description: 'Administración de plantas de hormigón y parámetros operativos' },
     projects: { title: 'Gestión de Proyectos', description: 'Planificación, presupuestos y seguimiento de obras' },
+    quality: { title: 'Control de Calidad', description: 'Resistencia, slump, muestras y rechazos de hormigón' },
     projections: { title: 'Proyecciones Financieras', description: 'Flujo de caja, punto de equilibrio y escenarios' },
     risks: { title: 'Análisis de Riesgos', description: 'Simulación Monte Carlo y análisis de sensibilidad' },
     reports: { title: 'Reportes y Exportación', description: 'Importación y exportación de datos (CSV, Excel, PDF)' },
@@ -13,6 +14,7 @@ const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', page: 'dashboard' },
     { icon: Factory, label: 'Plantas', page: 'plants' },
     { icon: Briefcase, label: 'Proyectos', page: 'projects' },
+    { icon: ClipboardCheck, label: 'Calidad', page: 'quality' },
     { icon: BarChart3, label: 'Proyecciones', page: 'projections' },
     { icon: ShieldAlert, label: 'Riesgos', page: 'risks' },
     { icon: FileOutput, label: 'Reportes', page: 'reports' },

@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Plants from './pages/Plants';
 import Projects from './pages/Projects';
 import Projections from './pages/Projections';
+import Quality from './pages/Quality';
 import Risks from './pages/Risks';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/Settings';
@@ -37,6 +38,7 @@ function App() {
       case 'plants': return <Plants />;
       case 'projects': return <Projects />;
       case 'projections': return <Projections />;
+      case 'quality': return <Quality />;
       case 'risks': return <Risks />;
       case 'reports': return <Reports />;
       case 'settings': return <SettingsPage />;
