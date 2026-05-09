@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { Factory, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Factory, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle2, FileSpreadsheet, FileText } from 'lucide-react';
 import Layout from '../components/Layout';
 import KPICard from '../components/KPICard';
 import { useFirestoreCollection } from '../hooks/useFirestore';
-import { Plant, Project } from '../types';
+import type { Plant, Project } from '../types';
 import { exportToExcel, exportToPDF } from '../services/importExport';
 
 

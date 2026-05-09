@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
 export const useFirestoreCollection = <T>(collectionName: string) => {
@@ -18,9 +18,9 @@ export const useFirestoreDocument = <T>(collectionName: string, id: string) => {
     queryKey: [collectionName, id],
     queryFn: async () => {
       const docRef = doc(db, collectionName, id);
-      const snapshot = await getDocs(query(collection(db, collectionName), where("__name__", "==", id)));
-      if (snapshot.empty) return null;
-      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as T;
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists()) return null;
+      return { id: snapshot.id, ...snapshot.data() } as T;
     },
     enabled: !!id,
   });
