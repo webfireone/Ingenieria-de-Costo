@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Factory, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle2, FileSpreadsheet, FileText } from 'lucide-react';
-import Layout from '../components/Layout';
 import KPICard from '../components/KPICard';
 import { useFirestoreCollection } from '../hooks/useFirestore';
 import type { Plant, Project } from '../types';
@@ -76,7 +75,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <>
       {/* Export Toolbar */}
       <div className="flex justify-end gap-3 mb-6">
         <button 
@@ -176,7 +175,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

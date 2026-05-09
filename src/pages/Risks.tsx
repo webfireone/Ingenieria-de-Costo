@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Play, ShieldAlert, BarChart, Info } from 'lucide-react';
-import Layout from '../components/Layout';
 import { MonteCarloStats } from '../types';
 
 const Risks: React.FC = () => {
@@ -74,7 +73,7 @@ const Risks: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-2xl font-bold">Análisis de Riesgos & Monte Carlo</h2>
@@ -149,7 +148,7 @@ const Risks: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 
