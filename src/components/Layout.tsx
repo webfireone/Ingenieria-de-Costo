@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Factory, Briefcase, BarChart3, ShieldAlert, FileOutput, Settings, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, Factory, Briefcase, ClipboardCheck, BarChart3, ShieldAlert, FileOutput, Settings, Receipt } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +11,7 @@ const pageMeta: Record<string, { title: string; description: string }> = {
   dashboard: { title: 'Panel Operativo', description: 'Monitoreo de costos y rentabilidad en tiempo real' },
   plants: { title: 'Gestión de Plantas', description: 'Administración de plantas de hormigón y parámetros operativos' },
   projects: { title: 'Gestión de Proyectos', description: 'Planificación, presupuestos y seguimiento de obras' },
+  presupuestos: { title: 'Presupuestos y Cotizaciones', description: 'Armado de presupuestos con materiales, MO, equipos e impuestos' },
   quality: { title: 'Control de Calidad', description: 'Resistencia, slump, muestras y rechazos de hormigón' },
   projections: { title: 'Proyecciones Financieras', description: 'Flujo de caja, punto de equilibrio y escenarios' },
   risks: { title: 'Análisis de Riesgos', description: 'Simulación Monte Carlo y análisis de sensibilidad' },
@@ -22,6 +23,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', page: 'dashboard' },
   { icon: Factory, label: 'Plantas', page: 'plants' },
   { icon: Briefcase, label: 'Proyectos', page: 'projects' },
+  { icon: Receipt, label: 'Presupuestos', page: 'presupuestos' },
   { icon: ClipboardCheck, label: 'Calidad', page: 'quality' },
   { icon: BarChart3, label: 'Proyecciones', page: 'projections' },
   { icon: ShieldAlert, label: 'Riesgos', page: 'risks' },
